@@ -433,9 +433,10 @@ const Signup = () => {
           : '';
       
       case 'zipCode':
-        return value && !/^\d{5}(-\d{4})?$/.test(value) 
-          ? 'Invalid ZIP code format' 
+        return value && !/^\d{6}$/.test(value)
+          ? 'Invalid PIN code format (6 digits required)'
           : '';
+
       
       case 'phone':
         return value && !/^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(value) 
