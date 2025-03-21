@@ -1,9 +1,15 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 
 const HomeContainer = styled.div`
   text-align: center;
+  padding: 0 20px;
+  
+  @media (max-width: 768px) {
+    padding: 0 15px;
+  }
 `;
 
 const Hero = styled.div`
@@ -12,6 +18,12 @@ const Hero = styled.div`
   border-radius: 15px;
   color: white;
   margin-bottom: 50px;
+  
+  @media (max-width: 768px) {
+    padding: 40px 15px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+  }
 `;
 
 const HeroTitle = styled.h1`
@@ -21,6 +33,15 @@ const HeroTitle = styled.h1`
   span {
     color: #ffd60a;
   }
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+    margin-bottom: 15px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.8rem;
+  }
 `;
 
 const HeroSubtitle = styled.p`
@@ -28,6 +49,11 @@ const HeroSubtitle = styled.p`
   max-width: 700px;
   margin: 0 auto 30px;
   line-height: 1.6;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+    margin-bottom: 25px;
+  }
 `;
 
 const CTAButton = styled(Link)`
@@ -39,16 +65,34 @@ const CTAButton = styled(Link)`
   font-size: 1.1rem;
   font-weight: 600;
   transition: all 0.3s ease;
+  text-decoration: none;
   
   &:hover {
     background-color: #ffea00;
     transform: translateY(-3px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   }
+  
+  @media (max-width: 768px) {
+    padding: 12px 25px;
+    font-size: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    display: block;
+    margin: 0 auto;
+    max-width: 200px;
+  }
 `;
 
 const FeaturesSection = styled.section`
   margin-bottom: 60px;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 40px;
+  }
 `;
 
 const SectionTitle = styled.h2`
@@ -68,6 +112,16 @@ const SectionTitle = styled.h2`
     background-color: #4361ee;
     border-radius: 2px;
   }
+  
+  @media (max-width: 768px) {
+    font-size: 1.6rem;
+    margin-bottom: 30px;
+    
+    &:after {
+      width: 60px;
+      height: 3px;
+    }
+  }
 `;
 
 const FeaturesGrid = styled.div`
@@ -75,6 +129,11 @@ const FeaturesGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 30px;
   margin-top: 30px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 `;
 
 const FeatureCard = styled.div`
@@ -87,26 +146,52 @@ const FeatureCard = styled.div`
   &:hover {
     transform: translateY(-10px);
   }
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    
+    &:hover {
+      transform: translateY(-5px);
+    }
+  }
 `;
 
 const FeatureIcon = styled.div`
   font-size: 2.5rem;
   margin-bottom: 20px;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+    margin-bottom: 15px;
+  }
 `;
 
 const FeatureTitle = styled.h3`
   font-size: 1.3rem;
   margin-bottom: 15px;
   color: #333;
+  
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
 `;
 
 const FeatureDescription = styled.p`
   color: #6c757d;
   line-height: 1.6;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const HowItWorksSection = styled.section`
   margin-bottom: 60px;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 40px;
+  }
 `;
 
 const StepsContainer = styled.div`
@@ -115,6 +200,10 @@ const StepsContainer = styled.div`
   gap: 30px;
   max-width: 800px;
   margin: 0 auto;
+  
+  @media (max-width: 768px) {
+    gap: 20px;
+  }
 `;
 
 const Step = styled.div`
@@ -122,6 +211,10 @@ const Step = styled.div`
   gap: 20px;
   align-items: flex-start;
   text-align: left;
+  
+  @media (max-width: 480px) {
+    gap: 15px;
+  }
 `;
 
 const StepNumber = styled.div`
@@ -135,19 +228,44 @@ const StepNumber = styled.div`
   justify-content: center;
   font-weight: 600;
   flex-shrink: 0;
+  
+  @media (max-width: 480px) {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
 `;
 
-const StepContent = styled.div``;
+const StepContent = styled.div`
+  flex: 1;
+`;
 
 const StepTitle = styled.h3`
   font-size: 1.2rem;
   margin-bottom: 10px;
   color: #333;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
 `;
 
 const StepDescription = styled.p`
   color: #6c757d;
   line-height: 1.6;
+  
+  @media (max-width: 768px) {
+    font-size: 0.95rem;
+  }
+`;
+
+const BottomCTA = styled(CTAButton)`
+  margin-bottom: 60px;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 40px;
+  }
 `;
 
 const Home = () => {
@@ -250,9 +368,9 @@ const Home = () => {
         </StepsContainer>
       </HowItWorksSection>
       
-      <CTAButton to="/topics">
+      <BottomCTA to="/topics">
         Explore Topics
-      </CTAButton>
+      </BottomCTA>
     </HomeContainer>
   );
 };

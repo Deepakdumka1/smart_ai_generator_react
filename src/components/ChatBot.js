@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { topicsData } from '../data/topicsData';
 import { FaRobot, FaPaperPlane, FaTimes, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
-// Styled components for the chatbot
+// Styled components for the chatbot with responsive improvements
 const ChatBotContainer = styled.div`
   position: fixed;
   bottom: 20px;
@@ -22,6 +23,22 @@ const ChatBotContainer = styled.div`
   overflow: hidden;
   transition: all 0.3s ease;
   transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(calc(100% - 60px))'};
+  
+  /* Responsive styling for mobile devices */
+  @media (max-width: 768px) {
+    width: 85%;
+    max-width: 350px;
+    right: 10px;
+    bottom: 80px; /* Increased to prevent overlap with other fixed elements */
+    max-height: 450px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 90%;
+    right: 5%;
+    left: 5%;
+    bottom: 70px;
+  }
 `;
 
 const ChatHeader = styled.div`
@@ -32,6 +49,10 @@ const ChatHeader = styled.div`
   background-color: #4361ee;
   color: white;
   cursor: pointer;
+  
+  @media (max-width: 480px) {
+    padding: 12px 15px;
+  }
 `;
 
 const ChatTitle = styled.h3`
@@ -40,6 +61,10 @@ const ChatTitle = styled.h3`
   display: flex;
   align-items: center;
   gap: 10px;
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const BotAvatar = styled.div`
@@ -52,6 +77,12 @@ const BotAvatar = styled.div`
   justify-content: center;
   font-weight: bold;
   color: #4361ee;
+  
+  @media (max-width: 480px) {
+    width: 25px;
+    height: 25px;
+    font-size: 0.9rem;
+  }
 `;
 
 const HeaderIcons = styled.div`
@@ -67,6 +98,14 @@ const HeaderIcons = styled.div`
       transform: scale(1.1);
     }
   }
+  
+  @media (max-width: 480px) {
+    gap: 8px;
+    
+    svg {
+      font-size: 0.9rem;
+    }
+  }
 `;
 
 const ChatBody = styled.div`
@@ -77,6 +116,35 @@ const ChatBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
+  
+  @media (max-width: 768px) {
+    padding: 12px;
+    max-height: 300px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px;
+    max-height: 280px;
+  }
+  
+  /* Improved scrollbar styling for mobile */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #cecece;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a0;
+  }
 `;
 
 const Message = styled.div`
@@ -86,6 +154,7 @@ const Message = styled.div`
   margin-bottom: 5px;
   font-size: 0.9rem;
   line-height: 1.4;
+  word-wrap: break-word;
   
   ${props => props.isBot ? `
     align-self: flex-start;
@@ -98,6 +167,13 @@ const Message = styled.div`
     color: white;
     border-bottom-right-radius: 5px;
   `}
+  
+  @media (max-width: 480px) {
+    max-width: 85%;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
 `;
 
 const ChatFooter = styled.div`
@@ -106,6 +182,11 @@ const ChatFooter = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  
+  @media (max-width: 480px) {
+    padding: 8px 10px;
+    gap: 8px;
+  }
 `;
 
 const ChatInput = styled.input`
@@ -118,6 +199,11 @@ const ChatInput = styled.input`
   
   &:focus {
     border-color: #4361ee;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 16px; /* Prevent iOS zoom on input focus */
   }
 `;
 
@@ -142,6 +228,13 @@ const SendButton = styled.button`
     background-color: #a0aec0;
     cursor: not-allowed;
   }
+  
+  @media (max-width: 480px) {
+    width: 40px; /* Slightly larger for better touch target */
+    height: 40px;
+    min-width: 40px; /* Ensure minimum touch target size */
+    min-height: 40px;
+  }
 `;
 
 const QuizButton = styled.button`
@@ -160,6 +253,11 @@ const QuizButton = styled.button`
   &:hover {
     background-color: #3a56d4;
     transform: scale(1.05);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px; /* Increased padding for better touch target */
+    font-size: 0.85rem;
   }
 `;
 
@@ -199,6 +297,15 @@ const TypingIndicator = styled.div`
     100% {
       opacity: 0.4;
       transform: translateY(0);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    
+    span {
+      width: 6px;
+      height: 6px;
     }
   }
 `;
@@ -387,6 +494,8 @@ const getSuggestedTopic = (currentUser) => {
   
   // Calculate average score for each topic
   currentUser.quizHistory.forEach(quiz => {
+    if (!quiz.answers) return; // Skip if answers array is missing
+    
     const correctAnswers = quiz.answers.filter(a => a.correct).length;
     const score = correctAnswers / quiz.totalQuestions;
     
@@ -411,7 +520,9 @@ const getSuggestedTopic = (currentUser) => {
   topicScores.sort((a, b) => a.averageScore - b.averageScore);
   
   // Get the topic with the lowest score
-  const lowestScoreTopic = topicsData.find(topic => topic.id === topicScores[0].topicId);
+  const lowestScoreTopic = topicsData.find(topic => 
+    topicScores.length > 0 && topic.id === topicScores[0].topicId
+  );
   
   return lowestScoreTopic || topicsData[Math.floor(Math.random() * topicsData.length)];
 };
@@ -439,7 +550,7 @@ const ChatBot = () => {
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const greeting = currentUser 
-        ? `Hello ${currentUser.firstName}! How can I help you today?` 
+        ? `Hello ${currentUser.firstName || 'there'}! How can I help you today?` 
         : botResponses.greetings[Math.floor(Math.random() * botResponses.greetings.length)];
       
       setIsTyping(true);
@@ -450,7 +561,7 @@ const ChatBot = () => {
         setIsTyping(false);
       }, 1000);
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser, messages.length]);
   
   // Update isOpen when isChatBotVisible changes
   useEffect(() => {
@@ -570,6 +681,7 @@ const ChatBot = () => {
             <SendButton 
               onClick={sendMessage}
               disabled={!inputValue.trim()}
+              aria-label="Send message"
             >
               <FaPaperPlane size={14} />
             </SendButton>

@@ -172,37 +172,41 @@ export const AuthProvider = ({ children }) => {
       if (file) {
         // Create storage reference with file metadata
         const metadata = {
-          contentType: 'image/jpeg',
+          contentType: file.type || 'image/jpeg',
           cacheControl: 'public, max-age=31536000' // Cache for 1 year
         };
   
-        // Create storage reference with a timestamp to prevent caching issues
+        // Create storage reference with a unique identifier
         const timestamp = Date.now();
         const storageRef = ref(
           storage, 
-          `profile-photos/${currentUser.uid}_${timestamp}`
+          `profile-photos/${currentUser.uid}/${timestamp}`
         );
   
-        // If there's an existing photo, delete it in the background
+        // If there's an existing photo, delete it
         if (currentUser.photoURL) {
           try {
+            // Extract path properly from URL
             const oldPhotoUrl = new URL(currentUser.photoURL);
-            const oldPhotoPath = decodeURIComponent(oldPhotoUrl.pathname.split('/o/')[1].split('?')[0]);
+            // Remove any query parameters that might cause parsing issues
+            const urlPath = oldPhotoUrl.pathname.split('?')[0];
+            const oldPhotoPath = decodeURIComponent(urlPath.split('/o/')[1]);
             const oldPhotoRef = ref(storage, oldPhotoPath);
+            
+            // Don't await this operation to avoid blocking the new upload
             deleteObject(oldPhotoRef).catch(error => {
-              console.error("Error deleting old photo:", error);
+              console.error("Error deleting old photo (non-blocking):", error);
             });
           } catch (error) {
-            console.error("Error parsing old photo URL:", error);
+            console.error("Error parsing old photo URL (continuing with upload):", error);
           }
         }
   
         // Upload new photo with metadata
-        await uploadBytes(storageRef, file, metadata);
+        const snapshot = await uploadBytes(storageRef, file, metadata);
         
-        // Get download URL with cache-busting query parameter
-        photoURL = await getDownloadURL(storageRef);
-        photoURL = `${photoURL}?t=${timestamp}`;
+        // Get download URL without modifying it
+        photoURL = await getDownloadURL(snapshot.ref);
       }
   
       // Update user document with new photo URL
@@ -222,7 +226,7 @@ export const AuthProvider = ({ children }) => {
       return updatedUser;
     } catch (error) {
       console.error("Error updating profile photo:", error);
-      throw new Error('Failed to update profile photo');
+      throw new Error('Failed to update profile photo: ' + (error.message || 'Unknown error'));
     }
   };
   const value = {

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 
@@ -14,6 +14,19 @@ const LoginContainer = styled.div`
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  
+  @media (max-width: 768px) {
+    max-width: 90%;
+    margin: 30px auto;
+    padding: 25px;
+  }
+  
+  @media (max-width: 480px) {
+    max-width: 95%;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 10px;
+  }
 `;
 
 const LoginTitle = styled.h1`
@@ -21,23 +34,45 @@ const LoginTitle = styled.h1`
   margin-bottom: 25px;
   color: #3a56d4;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.6rem;
+    margin-bottom: 15px;
+  }
 `;
 
 const LoginForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  
+  @media (max-width: 480px) {
+    gap: 15px;
+  }
 `;
 
 const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
+  
+  @media (max-width: 480px) {
+    gap: 6px;
+  }
 `;
 
 const Label = styled.label`
   font-weight: 500;
   color: #495057;
+  
+  @media (max-width: 480px) {
+    font-size: 0.95rem;
+  }
 `;
 
 const Input = styled.input`
@@ -46,10 +81,22 @@ const Input = styled.input`
   border: 2px solid #e9ecef;
   font-size: 1rem;
   transition: border-color 0.3s;
+  width: 100%;
+  box-sizing: border-box;
   
   &:focus {
     border-color: #4361ee;
     outline: none;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 10px;
+    border-radius: 6px;
   }
 `;
 
@@ -64,6 +111,7 @@ const LoginButton = styled.button`
   cursor: pointer;
   transition: background-color 0.3s;
   margin-top: 10px;
+  width: 100%;
   
   &:hover {
     background-color: #3a56d4;
@@ -72,6 +120,17 @@ const LoginButton = styled.button`
   &:disabled {
     background-color: #a0aec0;
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 5px;
   }
 `;
 
@@ -82,6 +141,18 @@ const ErrorMessage = styled.div`
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 0.9rem;
+  
+  @media (max-width: 768px) {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
 `;
 
 const SignupLink = styled.div`
@@ -97,6 +168,33 @@ const SignupLink = styled.div`
     &:hover {
       text-decoration: underline;
     }
+  }
+  
+  @media (max-width: 768px) {
+    margin-top: 20px;
+    font-size: 0.95rem;
+  }
+  
+  @media (max-width: 480px) {
+    margin-top: 15px;
+    font-size: 0.9rem;
+  }
+`;
+
+const ForgotPasswordLink = styled(Link)`
+  display: block;
+  text-align: right;
+  color: #4361ee;
+  font-size: 0.9rem;
+  text-decoration: none;
+  margin-top: 5px;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.85rem;
   }
 `;
 
@@ -195,6 +293,7 @@ const Login = () => {
             placeholder="Enter your password"
             required
           />
+          <ForgotPasswordLink to="/forgot-password">Forgot password?</ForgotPasswordLink>
         </FormGroup>
         
         <LoginButton type="submit" disabled={loading}>

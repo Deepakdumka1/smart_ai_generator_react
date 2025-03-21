@@ -1,3 +1,4 @@
+
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import React, { useState, useEffect, useRef } from 'react';
@@ -6,15 +7,28 @@ import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import imageCompression from 'browser-image-compression';
 
+// Main container with enhanced responsive behavior
 const ProfileContainer = styled.div`
   max-width: 1000px;
-  margin: 50px auto;
+  margin: 30px auto;
+  padding: 0 15px;
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
   
+  @media (max-width: 992px) {
+    grid-template-columns: 1fr 1.5fr;
+    gap: 20px;
+  }
+  
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    margin: 20px auto;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 15px;
+    margin: 15px auto;
   }
 `;
 
@@ -24,6 +38,44 @@ const ProfileSidebar = styled.div`
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   padding: 30px;
   height: fit-content;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    order: 1; /* Changed order to appear first on mobile */
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+  }
+`;
+
+const MobileTabsWrapper = styled.div`
+  display: none;
+  
+  @media (max-width: 768px) {
+    display: flex;
+    margin-bottom: 15px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+`;
+
+const MobileTab = styled.button`
+  flex: 1;
+  background-color: ${props => props.active ? '#4361ee' : 'white'};
+  color: ${props => props.active ? 'white' : '#495057'};
+  border: none;
+  padding: 15px 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: ${props => props.active ? '#3a56d4' : '#f8f9fa'};
+  }
 `;
 
 const ProfileAvatar = styled.div`
@@ -46,6 +98,12 @@ const ProfileAvatar = styled.div`
     height: 100%;
     object-fit: cover;
   }
+  
+  @media (max-width: 480px) {
+    width: 100px;
+    height: 100px;
+    font-size: 2rem;
+  }
 `;
 
 const AvatarOverlay = styled.div`
@@ -66,6 +124,13 @@ const AvatarOverlay = styled.div`
   &:hover {
     opacity: 1;
   }
+  
+  /* Make overlay visible on touch for mobile */
+  @media (max-width: 768px) {
+    &:active {
+      opacity: 1;
+    }
+  }
 `;
 
 const ChangePhotoText = styled.span`
@@ -74,6 +139,10 @@ const ChangePhotoText = styled.span`
   text-align: center;
   padding: 0 10px;
   margin-bottom: 5px;
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+  }
 `;
 
 const RemovePhotoText = styled.span`
@@ -82,6 +151,10 @@ const RemovePhotoText = styled.span`
   text-align: center;
   padding: 0 10px;
   display: ${props => props.show ? 'block' : 'none'};
+  
+  @media (max-width: 480px) {
+    font-size: 0.6rem;
+  }
 `;
 
 const FileInput = styled.input`
@@ -92,18 +165,32 @@ const ProfileName = styled.h2`
   font-size: 1.5rem;
   text-align: center;
   margin-bottom: 5px;
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+  }
 `;
 
 const ProfileEmail = styled.p`
   color: #6c757d;
   text-align: center;
   margin-bottom: 25px;
+  word-break: break-word;
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
 `;
 
 const SidebarNav = styled.nav`
   display: flex;
   flex-direction: column;
   gap: 10px;
+  
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 const NavItem = styled.button`
@@ -133,10 +220,16 @@ const LogoutButton = styled.button`
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 20px;
+  width: 100%;
   
   &:hover {
     background-color: #ef476f;
     color: white;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 10px;
+    font-size: 0.9rem;
   }
 `;
 
@@ -145,26 +238,49 @@ const ProfileContent = styled.div`
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
   padding: 30px;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+    order: 2; /* Changed order to appear after sidebar on mobile */
+  }
+  
+  @media (max-width: 480px) {
+    padding: 15px;
+  }
 `;
 
 const ContentTitle = styled.h2`
   font-size: 1.5rem;
   margin-bottom: 25px;
   color: #3a56d4;
+  
+  @media (max-width: 480px) {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
 `;
 
 const ProfileForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  
+  @media (max-width: 480px) {
+    gap: 15px;
+  }
 `;
 
 const FormRow = styled.div`
   display: flex;
   gap: 20px;
   
+  @media (max-width: 992px) {
+    gap: 15px;
+  }
+  
   @media (max-width: 768px) {
     flex-direction: column;
+    gap: 15px;
   }
 `;
 
@@ -173,11 +289,19 @@ const FormGroup = styled.div`
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  
+  @media (max-width: 480px) {
+    gap: 5px;
+  }
 `;
 
 const Label = styled.label`
   font-weight: 500;
   color: #495057;
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const Input = styled.input`
@@ -190,6 +314,14 @@ const Input = styled.input`
   &:focus {
     border-color: #4361ee;
     outline: none;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
   }
 `;
 
@@ -204,6 +336,7 @@ const SaveButton = styled.button`
   cursor: pointer;
   transition: background-color 0.3s;
   margin-top: 10px;
+  min-height: 48px;
   
   &:hover {
     background-color: #3a56d4;
@@ -212,6 +345,15 @@ const SaveButton = styled.button`
   &:disabled {
     background-color: #a0aec0;
     cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    min-height: 44px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.9rem;
+    padding: 10px;
   }
 `;
 
@@ -222,6 +364,12 @@ const SuccessMessage = styled.div`
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 0.9rem;
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
 `;
 
 const ErrorMessage = styled.div`
@@ -231,12 +379,22 @@ const ErrorMessage = styled.div`
   border-radius: 8px;
   margin-bottom: 15px;
   font-size: 0.9rem;
+  
+  @media (max-width: 480px) {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
 `;
 
 const QuizHistoryContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 15px;
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const QuizHistoryItem = styled.div`
@@ -249,6 +407,10 @@ const QuizHistoryItem = styled.div`
   &:hover {
     background-color: #e9ecef;
   }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 `;
 
 const QuizHistoryHeader = styled.div`
@@ -256,49 +418,95 @@ const QuizHistoryHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
 `;
 
 const QuizHistoryTitle = styled.h3`
   font-size: 1.1rem;
   margin: 0;
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
 `;
 
 const QuizHistoryDate = styled.span`
   color: #6c757d;
   font-size: 0.9rem;
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+  }
 `;
 
 const QuizHistoryStats = styled.div`
   display: flex;
   gap: 15px;
+  
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const QuizHistoryStat = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  
+  @media (max-width: 768px) {
+    flex: 1;
+    min-width: 80px;
+  }
 `;
 
 const StatValue = styled.span`
   font-size: 1.2rem;
   font-weight: 600;
   color: #4361ee;
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
 `;
 
 const StatLabel = styled.span`
   font-size: 0.8rem;
   color: #6c757d;
+  
+  @media (max-width: 480px) {
+    font-size: 0.7rem;
+  }
 `;
 
 const EmptyState = styled.div`
   text-align: center;
   padding: 30px;
   color: #6c757d;
+  
+  @media (max-width: 480px) {
+    padding: 20px 10px;
+    font-size: 0.9rem;
+  }
 `;
+
 const QuizHistoryLoading = styled.div`
   text-align: center;
   padding: 20px;
   color: #6c757d;
+  
+  @media (max-width: 480px) {
+    padding: 15px 10px;
+    font-size: 0.9rem;
+  }
 `;
 
 const RetryButton = styled.button`
@@ -314,7 +522,21 @@ const RetryButton = styled.button`
   &:hover {
     background-color: #3a56d4;
   }
+  
+  @media (max-width: 576px) {
+    margin-left: 0;
+    margin-top: 10px;
+    width: 100%;
+    min-height: 44px;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
 `;
+
+// Main component
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [formData, setFormData] = useState({
@@ -334,10 +556,21 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   const fileInputRef = useRef(null);
   const { currentUser, updateProfile, logout, updateProfilePhoto } = useAuth();
   const navigate = useNavigate();
+
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -436,14 +669,23 @@ const Profile = () => {
       [id]: value
     }));
   };
+
   const renderQuizHistory = () => {
     if (error) {
       return (
         <ErrorMessage>
           {error}
-          <RetryButton onClick={() => setActiveTab('history')}>
-            Retry
-          </RetryButton>
+          {windowWidth <= 576 ? (
+            <div style={{ marginTop: '10px' }}>
+              <RetryButton onClick={() => setActiveTab('history')}>
+                Retry
+              </RetryButton>
+            </div>
+          ) : (
+            <RetryButton onClick={() => setActiveTab('history')}>
+              Retry
+            </RetryButton>
+          )}
         </ErrorMessage>
       );
     }
@@ -477,7 +719,7 @@ const Profile = () => {
             <QuizHistoryHeader>
               <QuizHistoryTitle>{quiz.topicName || 'Unnamed Quiz'}</QuizHistoryTitle>
               <QuizHistoryDate>
-                {formatDate(quiz.completedAt)}
+                {formatDate(quiz.completedAt, windowWidth)}
               </QuizHistoryDate>
             </QuizHistoryHeader>
 
@@ -498,7 +740,7 @@ const Profile = () => {
 
               <QuizHistoryStat>
                 <StatValue>
-                  {Math.floor(quiz.duration / 60)}m {Math.round(quiz.duration % 60)}s
+                  {formatDuration(quiz.duration, windowWidth)}
                 </StatValue>
                 <StatLabel>Time Taken</StatLabel>
               </QuizHistoryStat>
@@ -509,10 +751,10 @@ const Profile = () => {
     );
   };
 
-
   if (!currentUser) {
     return null;
   }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -547,8 +789,18 @@ const Profile = () => {
     return `${currentUser.firstName?.charAt(0) || ''}${currentUser.lastName?.charAt(0) || ''}`;
   };
 
-  const formatDate = (dateString) => {
+  // Responsive date formatting
+  const formatDate = (dateString, width) => {
     const date = new Date(dateString);
+    
+    if (width <= 480) {
+      return date.toLocaleDateString('en-US', {
+        year: '2-digit',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -556,6 +808,14 @@ const Profile = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Responsive duration formatting
+  const formatDuration = (duration, width) => {
+    if (width <= 480) {
+      return `${Math.floor(duration / 60)}m`;
+    }
+    return `${Math.floor(duration / 60)}m ${Math.round(duration % 60)}s`;
   };
 
   const handlePhotoClick = () => {
@@ -641,175 +901,195 @@ const Profile = () => {
   }
 
   return (
-    <ProfileContainer>
-      <ProfileSidebar>
-        <ProfileAvatar>
-          {currentUser.photoURL ? (
-            <img src={currentUser.photoURL} alt="Profile" />
-          ) : (
-            getInitials()
-          )}
-          <AvatarOverlay onClick={handlePhotoClick}>
-            <ChangePhotoText>
-              {photoLoading ? 'Processing...' : 'Change Photo'}
-            </ChangePhotoText>
-            <RemovePhotoText
-              show={currentUser.photoURL}
-              onClick={handleRemovePhoto}
-            >
-              Remove Photo
-            </RemovePhotoText>
-          </AvatarOverlay>
-          <FileInput
-            type="file"
-            ref={fileInputRef}
-            onChange={handlePhotoChange}
-            accept="image/*"
-          />
-        </ProfileAvatar>
-        <ProfileName>{`${currentUser.firstName} ${currentUser.lastName}`}</ProfileName>
-        <ProfileEmail>{currentUser.email}</ProfileEmail>
-
-        <SidebarNav>
-          <NavItem
+    <>
+      {/* Mobile tabs navigation */}
+      {windowWidth <= 768 && (
+        <MobileTabsWrapper>
+          <MobileTab
             active={activeTab === 'profile'}
             onClick={() => setActiveTab('profile')}
           >
-            Profile Information
-          </NavItem>
-          <NavItem
+            Profile
+          </MobileTab>
+          <MobileTab
             active={activeTab === 'history'}
             onClick={() => setActiveTab('history')}
           >
             Quiz History
-          </NavItem>
-        </SidebarNav>
+          </MobileTab>
+        </MobileTabsWrapper>
+      )}
+      
+      <ProfileContainer>
+        <ProfileSidebar>
+          <ProfileAvatar>
+            {currentUser.photoURL ? (
+              <img src={currentUser.photoURL} alt="Profile" />
+            ) : (
+              getInitials()
+            )}
+            <AvatarOverlay onClick={handlePhotoClick}>
+              <ChangePhotoText>
+                {photoLoading ? 'Processing...' : 'Change Photo'}
+              </ChangePhotoText>
+              <RemovePhotoText
+                show={currentUser.photoURL}
+                onClick={handleRemovePhoto}
+              >
+                Remove Photo
+              </RemovePhotoText>
+            </AvatarOverlay>
+            <FileInput
+              type="file"
+              ref={fileInputRef}
+              onChange={handlePhotoChange}
+              accept="image/*"
+            />
+          </ProfileAvatar>
+          <ProfileName>{`${currentUser.firstName || ''} ${currentUser.lastName || ''}`}</ProfileName>
+          <ProfileEmail>{currentUser.email}</ProfileEmail>
 
-        <LogoutButton onClick={handleLogout}>
-          Logout
-        </LogoutButton>
-      </ProfileSidebar>
+          <SidebarNav>
+            <NavItem
+              active={activeTab === 'profile'}
+              onClick={() => setActiveTab('profile')}
+            >
+              Profile Information
+            </NavItem>
+            <NavItem
+              active={activeTab === 'history'}
+              onClick={() => setActiveTab('history')}
+            >
+              Quiz History
+            </NavItem>
+          </SidebarNav>
 
-      <ProfileContent>
-        {activeTab === 'profile' && (
-          <>
-            <ContentTitle>Profile Information</ContentTitle>
-            {success && <SuccessMessage>{success}</SuccessMessage>}
-            {error && <ErrorMessage>{error}</ErrorMessage>}
+          <LogoutButton onClick={handleLogout}>
+            Logout
+          </LogoutButton>
+        </ProfileSidebar>
 
-            <ProfileForm onSubmit={handleSubmit}>
-              <FormRow>
+        <ProfileContent>
+          {activeTab === 'profile' && (
+            <>
+              <ContentTitle>Profile Information</ContentTitle>
+              {success && <SuccessMessage>{success}</SuccessMessage>}
+              {error && <ErrorMessage>{error}</ErrorMessage>}
+
+              <ProfileForm onSubmit={handleSubmit}>
+                <FormRow>
+                  <FormGroup>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      type="text"
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      placeholder="Enter your first name"
+                      required
+                    />
+                  </FormGroup>
+
+                  <FormGroup>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      type="text"
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      placeholder="Enter your last name"
+                      required
+                    />
+                  </FormGroup>
+                </FormRow>
+
                 <FormGroup>
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    type="text"
-                    id="firstName"
-                    value={formData.firstName}
+                    type="email"
+                    id="email"
+                    value={formData.email}
                     onChange={handleChange}
-                    placeholder="Enter your first name"
+                    placeholder="Enter your email"
                     required
+                    disabled
                   />
                 </FormGroup>
 
                 <FormGroup>
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="address">Address</Label>
                   <Input
                     type="text"
-                    id="lastName"
-                    value={formData.lastName}
+                    id="address"
+                    value={formData.address}
                     onChange={handleChange}
-                    placeholder="Enter your last name"
-                    required
-                  />
-                </FormGroup>
-              </FormRow>
-
-              <FormGroup>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                  required
-                  disabled
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  type="text"
-                  id="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter your address"
-                />
-              </FormGroup>
-
-              <FormRow>
-                <FormGroup>
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    type="text"
-                    id="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="City"
+                    placeholder="Enter your address"
                   />
                 </FormGroup>
 
-                <FormGroup>
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    type="text"
-                    id="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    placeholder="State"
-                  />
-                </FormGroup>
+                <FormRow>
+                  <FormGroup>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                        type="text"
+                        id="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        placeholder="City"
+                      />
+                    </FormGroup>
 
-                <FormGroup>
-                  <Label htmlFor="zipCode">Zip Code</Label>
-                  <Input
-                    type="text"
-                    id="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleChange}
-                    placeholder="Zip Code"
-                  />
-                </FormGroup>
-              </FormRow>
+                    <FormGroup>
+                      <Label htmlFor="state">State</Label>
+                      <Input
+                        type="text"
+                        id="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        placeholder="State"
+                      />
+                    </FormGroup>
 
-              <FormGroup>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  type="tel"
-                  id="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter your phone number"
-                />
-              </FormGroup>
+                    <FormGroup>
+                      <Label htmlFor="zipCode">Zip Code</Label>
+                      <Input
+                        type="text"
+                        id="zipCode"
+                        value={formData.zipCode}
+                        onChange={handleChange}
+                        placeholder="Zip Code"
+                      />
+                    </FormGroup>
+                  </FormRow>
 
-              <SaveButton type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Save Changes'}
-              </SaveButton>
-            </ProfileForm>
-          </>
-        )}
-        {activeTab === 'history' && (
-          <>
-            <ContentTitle>Quiz History</ContentTitle>
-            {renderQuizHistory()}
-          </>
+                  <FormGroup>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      type="tel"
+                      id="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="Enter your phone number"
+                    />
+                  </FormGroup>
 
-        )}
-      </ProfileContent>
-    </ProfileContainer>
-  );
+                  <SaveButton type="submit" disabled={loading}>
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </SaveButton>
+                </ProfileForm>
+              </>
+            )}
+            
+            {activeTab === 'history' && (
+              <>
+                <ContentTitle>Quiz History</ContentTitle>
+                {renderQuizHistory()}
+              </>
+            )}
+          </ProfileContent>
+        </ProfileContainer>
+      </>
+    );
 };
 
 export default Profile;
