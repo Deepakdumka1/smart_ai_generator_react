@@ -368,6 +368,12 @@ const Quiz = () => {
   };
   
   const handleNextQuestion = () => {
+    // Check if we've reached the maximum number of questions
+    if (currentQuestionIndex >= 9) {
+      handleSubmitQuiz();
+      return;
+    }
+
     // Determine the difficulty for the next question based on the last answer
     const lastAnswer = userAnswers[userAnswers.length - 1];
     const newDifficulty = lastAnswer.correct 
@@ -383,6 +389,7 @@ const Quiz = () => {
       questions
     );
     
+    // If no more questions are available, submit the quiz
     if (!newQuestion) {
       handleSubmitQuiz();
       return;
