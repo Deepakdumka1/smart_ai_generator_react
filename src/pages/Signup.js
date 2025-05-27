@@ -353,10 +353,10 @@ const OptionalText = styled.span`
 
 // US states array for dropdown
 const INDIA_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
-  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", 
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
+  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands",
   "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Lakshadweep", "Delhi", "Puducherry"
 ];
 
@@ -373,101 +373,103 @@ const Signup = () => {
     zipCode: '',
     phone: ''
   });
-  
+
   const [formErrors, setFormErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [touchedFields, setTouchedFields] = useState({});
-  
+
   const { signup } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Track redirect path if user was redirected to signup
   const redirectPath = location.state?.from || '/';
-  
+
   // Calculate password strength
   useEffect(() => {
     if (!formData.password) {
       setPasswordStrength(0);
       return;
     }
-    
+
     let strength = 0;
-    
+
     // Length check
     if (formData.password.length >= 8) strength += 25;
-    
+
     // Character variety checks
     if (/[A-Z]/.test(formData.password)) strength += 25;
     if (/[0-9]/.test(formData.password)) strength += 25;
     if (/[^A-Za-z0-9]/.test(formData.password)) strength += 25;
-    
+
     setPasswordStrength(strength);
   }, [formData.password]);
-  
+
   const validateField = (name, value) => {
     switch (name) {
       case 'firstName':
       case 'lastName':
         return value.trim() === '' ? 'This field is required' : '';
-      
+
       case 'email':
-        return value.trim() === '' 
-          ? 'Email is required' 
-          : !/\S+@\S+\.\S+/.test(value) 
-            ? 'Email is invalid' 
+        return value.trim() === ''
+          ? 'Email is required'
+          : !/\S+@\S+\.\S+/.test(value)
+            ? 'Email is invalid'
             : '';
-      
+
       case 'password':
-        return value.trim() === '' 
-          ? 'Password is required' 
-          : value.length < 6 
-            ? 'Password must be at least 6 characters' 
+        return value.trim() === ''
+          ? 'Password is required'
+          : value.length < 6
+            ? 'Password must be at least 6 characters'
             : '';
-      
+
       case 'confirmPassword':
-        return value !== formData.password 
-          ? 'Passwords do not match' 
+        return value !== formData.password
+          ? 'Passwords do not match'
           : '';
-      
+
+
       case 'zipCode':
-        return value && !/^\d{5}(-\d{4})?$/.test(value) 
-          ? 'Invalid ZIP code format' 
+        return value && !/^\d{6}$/.test(value)
+          ? 'Invalid PIN code format (6 digits required)'
           : '';
-      
+
+
       case 'phone':
-        return value && !/^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(value) 
-          ? 'Invalid phone number format' 
+        return value && !/^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(value)
+          ? 'Invalid phone number format'
           : '';
-      
+
       default:
         return '';
     }
   };
-  
+
   const validateForm = () => {
     const errors = {};
-    
+
     // Validate each field
     Object.keys(formData).forEach(key => {
       const error = validateField(key, formData[key]);
       if (error) errors[key] = error;
     });
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  
+
   const handleChange = (e) => {
     const { id, value } = e.target;
-    
+
     setFormData(prev => ({
       ...prev,
       [id]: value
     }));
-    
+
     // Live validation after field has been touched
     if (touchedFields[id]) {
       const error = validateField(id, value);
@@ -477,16 +479,16 @@ const Signup = () => {
       }));
     }
   };
-  
+
   const handleBlur = (e) => {
     const { id, value } = e.target;
-    
+
     // Mark field as touched
     setTouchedFields(prev => ({
       ...prev,
       [id]: true
     }));
-    
+
     // Validate on blur
     const error = validateField(id, value);
     setFormErrors(prev => ({
@@ -494,10 +496,10 @@ const Signup = () => {
       [id]: error
     }));
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!validateForm()) {
       // Set all fields as touched to show all errors
@@ -505,47 +507,47 @@ const Signup = () => {
         acc[key] = true;
         return acc;
       }, {});
-      
+
       setTouchedFields(allTouched);
       return;
     }
-    
+
     try {
       setError('');
       setLoading(true);
-      
+
       // Remove confirmPassword before saving
       const { confirmPassword, ...userData } = formData;
-      
+
       await signup(userData);
       navigate(redirectPath);
     } catch (error) {
       setError(
-        error.code === 'auth/email-already-in-use' 
-          ? 'This email is already in use. Please try another or login.' 
+        error.code === 'auth/email-already-in-use'
+          ? 'This email is already in use. Please try another or login.'
           : error.message || 'Failed to create account.'
       );
-      
+
       // Scroll to top to show error
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
   };
-  
+
   return (
     <SignupContainer className="fade-in">
       <SignupTitle>Create an Account</SignupTitle>
-      
+
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      
+
       <SignupForm onSubmit={handleSubmit} noValidate>
         {/* Basic Information */}
         <FormRow>
           <FormGroup>
             <Label htmlFor="firstName" required>First Name</Label>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               id="firstName"
               value={formData.firstName}
               onChange={handleChange}
@@ -559,11 +561,11 @@ const Signup = () => {
               <FieldError>{formErrors.firstName}</FieldError>
             )}
           </FormGroup>
-          
+
           <FormGroup>
             <Label htmlFor="lastName" required>Last Name</Label>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               id="lastName"
               value={formData.lastName}
               onChange={handleChange}
@@ -578,11 +580,11 @@ const Signup = () => {
             )}
           </FormGroup>
         </FormRow>
-        
+
         <FormGroup>
           <Label htmlFor="email" required>Email</Label>
-          <Input 
-            type="email" 
+          <Input
+            type="email"
             id="email"
             value={formData.email}
             onChange={handleChange}
@@ -597,12 +599,12 @@ const Signup = () => {
             <FieldError>{formErrors.email}</FieldError>
           )}
         </FormGroup>
-        
+
         <FormRow>
           <FormGroup>
             <Label htmlFor="password" required>Password</Label>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               id="password"
               value={formData.password}
               onChange={handleChange}
@@ -613,7 +615,7 @@ const Signup = () => {
               aria-required="true"
               autoComplete="new-password"
             />
-            
+
             {/* Password strength meter */}
             {formData.password && (
               <>
@@ -626,16 +628,16 @@ const Signup = () => {
                 </StrengthText>
               </>
             )}
-            
+
             {touchedFields.password && formErrors.password && (
               <FieldError>{formErrors.password}</FieldError>
             )}
           </FormGroup>
-          
+
           <FormGroup>
             <Label htmlFor="confirmPassword" required>Confirm Password</Label>
-            <Input 
-              type="password" 
+            <Input
+              type="password"
               id="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -651,15 +653,15 @@ const Signup = () => {
             )}
           </FormGroup>
         </FormRow>
-        
+
         {/* Optional Contact Information */}
         <FormSection>
           <SectionTitle>Contact Information <OptionalText>(Optional)</OptionalText></SectionTitle>
-          
+
           <FormGroup>
             <Label htmlFor="address">Address</Label>
-            <Input 
-              type="text" 
+            <Input
+              type="text"
               id="address"
               value={formData.address}
               onChange={handleChange}
@@ -669,12 +671,12 @@ const Signup = () => {
               autoComplete="street-address"
             />
           </FormGroup>
-          
+
           <FormRow>
             <FormGroup>
               <Label htmlFor="city">City</Label>
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 id="city"
                 value={formData.city}
                 onChange={handleChange}
@@ -684,7 +686,7 @@ const Signup = () => {
                 autoComplete="address-level2"
               />
             </FormGroup>
-            
+
             <FormGroup>
               <Label htmlFor="state">State</Label>
               <Select
@@ -701,11 +703,11 @@ const Signup = () => {
                 ))}
               </Select>
             </FormGroup>
-            
+
             <FormGroup>
               <Label htmlFor="zipCode">Zip Code</Label>
-              <Input 
-                type="text" 
+              <Input
+                type="text"
                 id="zipCode"
                 value={formData.zipCode}
                 onChange={handleChange}
@@ -720,11 +722,11 @@ const Signup = () => {
               )}
             </FormGroup>
           </FormRow>
-          
+
           <FormGroup>
             <Label htmlFor="phone">Phone Number</Label>
-            <Input 
-              type="tel" 
+            <Input
+              type="tel"
               id="phone"
               value={formData.phone}
               onChange={handleChange}
@@ -739,7 +741,7 @@ const Signup = () => {
             )}
           </FormGroup>
         </FormSection>
-        
+
         <SignupButton type="submit" disabled={loading} className="touch-friendly-spacing">
           <ButtonContent>
             {loading && <Spinner />}
@@ -747,7 +749,7 @@ const Signup = () => {
           </ButtonContent>
         </SignupButton>
       </SignupForm>
-      
+
       <LoginLink>
         Already have an account? <Link to="/login">Log in</Link>
       </LoginLink>
