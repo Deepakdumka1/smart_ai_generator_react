@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -432,12 +431,10 @@ const Signup = () => {
           ? 'Passwords do not match'
           : '';
 
-
       case 'zipCode':
         return value && !/^\d{6}$/.test(value)
           ? 'Invalid PIN code format (6 digits required)'
           : '';
-
 
       case 'phone':
         return value && !/^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/.test(value)
