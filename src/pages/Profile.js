@@ -1,4 +1,3 @@
-
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import React, { useState, useEffect, useRef } from 'react';
@@ -6,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../context/AuthContext';
 import imageCompression from 'browser-image-compression';
+import ApiKeyManager from '../components/ApiKeyManager';
 
 // Main container with enhanced responsive behavior
 const ProfileContainer = styled.div`
@@ -539,6 +539,7 @@ const RetryButton = styled.button`
 // Main component
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('profile');
+  const [aiTab, setAiTab] = useState('generator');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

@@ -1,8 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import TopicCard from '../components/TopicCard';
 import { topicsData } from '../data/topicsData';
+import { Link } from 'react-router-dom';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { useAuth } from '../context/AuthContext';
 import '../styles/responsive.css';
 
 const TopicsContainer = styled.div`
@@ -85,7 +88,7 @@ const FilterGroup = styled.div`
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  
+  margin-top:16px;
   @media (max-width: 576px) {
     gap: 8px;
     justify-content: center;
@@ -233,10 +236,14 @@ const ScrollableFilterGroup = styled(FilterGroup)`
 `;
 
 const Topics = () => {
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const { currentUser } = useAuth();
   
   // Handle window resize to detect screen size changes
   useEffect(() => {

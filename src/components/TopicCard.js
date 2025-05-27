@@ -221,6 +221,8 @@ const CardButton = styled(Link)`
   text-align: center;
   
   &:hover {
+    text-decoration:none;
+    color:white;
     background-color: #3a56d4;
   }
   

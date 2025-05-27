@@ -68,6 +68,7 @@ const CTAButton = styled(Link)`
   text-decoration: none;
   
   &:hover {
+    text-decoration: none;
     background-color: #ffea00;
     transform: translateY(-3px);
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);

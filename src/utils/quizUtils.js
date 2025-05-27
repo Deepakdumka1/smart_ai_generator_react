@@ -10,52 +10,55 @@
  * @returns {Object} A question object
  */
 export const generateAdaptiveQuestion = (questions, difficulty, previousQuestions) => {
-  // Filter questions by difficulty
-  const filteredQuestions = questions.filter(q => q.difficulty === difficulty);
+  // Create a Set of previous question IDs for faster lookup
+  const previousQuestionIds = new Set(previousQuestions.map(q => q.id));
   
-  // Filter out previously asked questions
-  const availableQuestions = filteredQuestions.filter(q => 
-    !previousQuestions.some(prevQ => prevQ.id === q.id)
+  // Filter questions by difficulty and exclude previous questions
+  const filteredQuestions = questions.filter(q => 
+    q.difficulty === difficulty && !previousQuestionIds.has(q.id)
   );
   
   // If no questions available at the current difficulty, try adjacent difficulties
-  if (availableQuestions.length === 0) {
+  if (filteredQuestions.length === 0) {
     // Try to find questions from adjacent difficulty levels
-    let alternativeDifficulty;
+    let alternativeDifficulties = [];
     
     if (difficulty === 'easy') {
-      alternativeDifficulty = 'medium';
+      alternativeDifficulties = ['medium'];
     } else if (difficulty === 'hard') {
-      alternativeDifficulty = 'medium';
+      alternativeDifficulties = ['medium'];
     } else {
-      // For medium difficulty, randomly choose between easy and hard
-      alternativeDifficulty = Math.random() > 0.5 ? 'easy' : 'hard';
+      // For medium difficulty, try both easy and hard
+      alternativeDifficulties = ['easy', 'hard'];
     }
     
-    const alternativeQuestions = questions.filter(q => 
-      q.difficulty === alternativeDifficulty && 
-      !previousQuestions.some(prevQ => prevQ.id === q.id)
-    );
-    
-    if (alternativeQuestions.length > 0) {
-      return alternativeQuestions[Math.floor(Math.random() * alternativeQuestions.length)];
+    // Try each alternative difficulty in order
+    for (const altDifficulty of alternativeDifficulties) {
+      const alternativeQuestions = questions.filter(q => 
+        q.difficulty === altDifficulty && !previousQuestionIds.has(q.id)
+      );
+      
+      if (alternativeQuestions.length > 0) {
+        return alternativeQuestions[Math.floor(Math.random() * alternativeQuestions.length)];
+      }
     }
     
-    // If still no questions, return a random question that hasn't been asked
-    const remainingQuestions = questions.filter(q => 
-      !previousQuestions.some(prevQ => prevQ.id === q.id)
-    );
+    // If still no questions available, check if we've used all questions
+    const allQuestionsUsed = questions.every(q => previousQuestionIds.has(q.id));
     
-    if (remainingQuestions.length > 0) {
-      return remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
+    if (allQuestionsUsed) {
+      // If all questions have been used, return null to indicate quiz completion
+      return null;
     }
     
-    // If all questions have been asked, return a random question
-    return questions[Math.floor(Math.random() * questions.length)];
+    // If some questions are still available but not at the desired difficulty,
+    // return a random unused question
+    const remainingQuestions = questions.filter(q => !previousQuestionIds.has(q.id));
+    return remainingQuestions[Math.floor(Math.random() * remainingQuestions.length)];
   }
   
   // Return a random question from the available questions
-  return availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
+  return filteredQuestions[Math.floor(Math.random() * filteredQuestions.length)];
 };
 
 /**

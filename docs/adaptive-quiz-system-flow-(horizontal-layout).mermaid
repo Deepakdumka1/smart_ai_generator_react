@@ -1,0 +1,14 @@
+graph LR;
+    A["Start Quiz"] --> B["Present Medium Difficulty Question"]
+    B --> C["User Answers Question"]
+    C --> D{"Evaluate Answer"}
+    D -->|"Incorrect"| E["Track Progress & Decrease Difficulty"]
+    D -->|"Correct"| F["Track Progress & Increase Difficulty"]
+    E --> G{"More Questions?"}
+    F --> G
+    G -->|"Yes"| H["Select Next Question Based on Performance"]
+    G -->|"No"| I["Generate Performance Analysis"]
+    H --> C
+    I --> J["Identify Strengths & Weaknesses"]
+    J --> K["Provide AI-Based Recommendations"]
+    K --> L["Display Final Report"]

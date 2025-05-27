@@ -229,6 +229,31 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Failed to update profile photo: ' + (error.message || 'Unknown error'));
     }
   };
+  // Update user profile with specific fields
+  const updateUserProfile = async (updatedFields) => {
+    if (!currentUser?.uid) throw new Error('No authenticated user');
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    const updateData = {
+      ...updatedFields,
+      updatedAt: new Date().toISOString()
+    };
+
+    await updateDoc(userRef, updateData);
+    
+    // Get updated profile
+    const userDoc = await getDoc(userRef);
+    const updatedUser = { ...currentUser, ...userDoc.data() };
+    setCurrentUser(updatedUser);
+    
+    return updatedUser;
+  };
+
+  // Get user's OpenAI API key
+  const getApiKey = () => {
+    return currentUser?.openaiApiKey || '';
+  };
+
   const value = {
     currentUser,
     signup,
@@ -236,7 +261,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     updateProfilePhoto,
-    addQuizToHistory
+    updateUserProfile,
+    addQuizToHistory,
+    getApiKey
   };
 
   return (

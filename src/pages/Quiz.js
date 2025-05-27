@@ -8,7 +8,6 @@ import { questionsData } from '../data/questionsData';
 import { generateAdaptiveQuestion } from '../utils/quizUtils';
 import { useAuth } from '../context/AuthContext';
 
-// Container with padding for small screens
 const QuizContainer = styled.div`
   max-width: 1000px;
   margin: 0 auto;
@@ -155,7 +154,6 @@ const QuizControls = styled.div`
   }
 `;
 
-// Base button styles with improved touch-friendly sizing
 const QuizButton = styled.button`
   padding: 12px 25px;
   border-radius: 8px;
@@ -163,7 +161,7 @@ const QuizButton = styled.button`
   font-weight: 500;
   font-size: 1rem;
   transition: all 0.3s ease;
-  min-height: 48px; /* Touch-friendly height */
+  min-height: 48px;
   box-shadow: 0 2px 4px rgba(149, 60, 60, 0.1);
   
   &:disabled {
@@ -288,6 +286,24 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+const getHarderDifficulty = (difficulty) => {
+  switch(difficulty) {
+    case 'easy': return 'medium';
+    case 'medium': return 'hard';
+    case 'hard': return 'hard'; // Stay hard if already hard
+    default: return 'medium';
+  }
+};
+
+const getEasierDifficulty = (difficulty) => {
+  switch(difficulty) {
+    case 'easy': return 'easy'; // Stay easy if already easy
+    case 'medium': return 'easy';
+    case 'hard': return 'medium';
+    default: return 'easy';
+  }
+};
+
 const Quiz = () => {
   const { topicId } = useParams();
   const navigate = useNavigate();
@@ -306,7 +322,6 @@ const Quiz = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
@@ -349,47 +364,34 @@ const Quiz = () => {
   
   const handleAnswer = (answerData) => {
     setUserAnswers(prev => [...prev, answerData]);
-    
-    const newDifficulty = answerData.correct ? 
-      getHarderDifficulty(currentDifficulty) : 
-      getEasierDifficulty(currentDifficulty);
-    
-    setNextQuestionDifficulty(newDifficulty);
     setError(null);
   };
   
-  const getHarderDifficulty = (difficulty) => {
-    switch(difficulty) {
-      case 'easy': return 'medium';
-      case 'medium': return 'hard';
-      case 'hard': return 'hard';
-      default: return 'medium';
-    }
-  };
-  
-  const getEasierDifficulty = (difficulty) => {
-    switch(difficulty) {
-      case 'easy': return 'easy';
-      case 'medium': return 'easy';
-      case 'hard': return 'medium';
-      default: return 'easy';
-    }
-  };
-  
   const handleNextQuestion = () => {
-    setCurrentDifficulty(nextQuestionDifficulty);
-    
+    // Determine the difficulty for the next question based on the last answer
+    const lastAnswer = userAnswers[userAnswers.length - 1];
+    const newDifficulty = lastAnswer.correct 
+      ? getHarderDifficulty(currentDifficulty) 
+      : getEasierDifficulty(currentDifficulty);
+
+    setNextQuestionDifficulty(newDifficulty);
+    setCurrentDifficulty(newDifficulty);
+  
     const newQuestion = generateAdaptiveQuestion(
       questionsData.filter(q => q.topicId === topicId),
-      nextQuestionDifficulty,
+      newDifficulty,
       questions
     );
+    
+    if (!newQuestion) {
+      handleSubmitQuiz();
+      return;
+    }
     
     setQuestions(prev => [...prev, newQuestion]);
     setCurrentQuestionIndex(prev => prev + 1);
     setError(null);
     
-    // Scroll to top on mobile for better UX
     if (windowWidth <= 768) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -405,7 +407,6 @@ const Quiz = () => {
       const quizEndTime = Date.now();
       const quizDuration = (quizEndTime - quizStartTime) / 1000;
       
-      // Calculate correct answers
       const correctAnswers = userAnswers.filter(answer => answer.correct).length;
       const totalQuestions = questions.length;
       
@@ -434,9 +435,7 @@ const Quiz = () => {
   };
   
   const handleQuitQuiz = () => {
-    // Custom confirm dialog optimized for mobile
     if (windowWidth <= 576) {
-      // More touch-friendly confirm on mobile
       if (window.confirm('Are you sure you want to quit? Your progress will be lost.')) {
         navigate('/topics');
       }
@@ -483,16 +482,16 @@ const Quiz = () => {
         <QuizTitle>{topic.name} Quiz</QuizTitle>
         <QuizInfo>
           <QuizInfoItem>
-            <InfoIcon role="img" aria-label="topic">📚</InfoIcon> 
+            <InfoIcon role="img" aria-label="topic">📚</InfoIcon>
             <span>Topic: {topic.name}</span>
           </QuizInfoItem>
           <DifficultyInfoItem difficulty={currentDifficulty}>
-            <InfoIcon role="img" aria-label="difficulty">🔥</InfoIcon> 
+            <InfoIcon role="img" aria-label="difficulty">🔥</InfoIcon>
             <span>Difficulty: {currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1)}</span>
           </DifficultyInfoItem>
           <QuizInfoItem>
-            <InfoIcon role="img" aria-label="questions">❓</InfoIcon> 
-            <span>Question {currentQuestionIndex + 1} of {isLastQuestion ? 10 : '10'}</span>
+            <InfoIcon role="img" aria-label="questions">❓</InfoIcon>
+            <span>Question {currentQuestionIndex + 1} of 10</span>
           </QuizInfoItem>
         </QuizInfo>
         
@@ -505,7 +504,7 @@ const Quiz = () => {
         <QuestionCard 
           key={`question-${currentQuestionIndex}-${currentQuestion.id}`}
           question={currentQuestion}
-          difficulty={currentQuestion.difficulty}
+          difficulty={currentDifficulty}
           topic={topic.name}
           onAnswer={handleAnswer}
           showFeedback={true}
