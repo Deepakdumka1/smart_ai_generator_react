@@ -20,7 +20,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 
-// Context
+// Context....
 import { AuthProvider } from './context/AuthContext';
 import { ChatBotProvider } from './context/ChatBotContext';
 
