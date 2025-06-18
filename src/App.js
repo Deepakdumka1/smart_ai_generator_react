@@ -24,7 +24,7 @@ import Profile from './pages/Profile';
 import { AuthProvider } from './context/AuthContext';
 import { ChatBotProvider } from './context/ChatBotContext';
 
-// Import responsive utility classes
+// Import responsive utility classes here .......
 import './styles/responsive.css';
 
 const AppContainer = styled.div`
