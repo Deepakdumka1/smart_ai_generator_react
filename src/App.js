@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
 import ChatBot from './components/ChatBot';
 import ChatBotButton from './components/ChatBotButton';
-import ProgressBar from './components/ProgressBar'; // For page loading animation
+import ProgressBar from './components/ProgressBar'; // For page loading animation.....
 
 // Pages....
 import Home from './pages/Home';
