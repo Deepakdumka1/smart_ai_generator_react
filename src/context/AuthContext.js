@@ -72,6 +72,7 @@ export const AuthProvider = ({ children }) => {
       ...profileData,
       email,
       quizHistory: [],
+      isAdmin: false, // Default to false, can be manually set for admin users
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     });

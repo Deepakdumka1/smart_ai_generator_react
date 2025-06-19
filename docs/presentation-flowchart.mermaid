@@ -1,0 +1,42 @@
+flowchart TD
+    Start([User Enters Website]) --> Home[Home Page]
+    
+    subgraph Core["Core User Journey"]
+        Home --> Topics[Browse Topics]
+        Topics --> SelectTopic{Select Topic?}
+        SelectTopic -->|Yes| Quiz[Take Quiz]
+        SelectTopic -->|No| BackToHome[Return to Home]
+        BackToHome --> Home
+        Quiz --> Submit[Submit Answers]
+        Submit --> Results[View Results]
+        Results --> NewQuiz{Try Another Quiz?}
+        NewQuiz -->|Yes| Topics
+        NewQuiz -->|No| Exit([End Session])
+    end
+    
+    subgraph Support["Support Features"]
+        Home -.-> ChatbotHelp[Access Chatbot]
+        Topics -.-> ChatbotHelp
+        Quiz -.-> ChatbotHelp
+        Results -.-> ChatbotHelp
+        ChatbotHelp --> GetAssistance[Receive AI Assistance]
+        GetAssistance -.-> ReturnToFlow[Return to Previous Screen]
+    end
+    
+    subgraph Auth["User Authentication"]
+        Home -->|Login/Signup| AuthFlow[Authentication]
+        AuthFlow -->|Success| Profile[User Profile]
+        Profile --> ViewHistory[View Quiz History]
+        ViewHistory --> Topics
+    end
+    
+    %% Styling
+    classDef primary fill:#4c6ef5,stroke:#364fc7,color:white
+    classDef secondary fill:#fab005,stroke:#f08c00,color:black
+    classDef success fill:#40c057,stroke:#2f9e44,color:white
+    classDef info fill:#15aabf,stroke:#1098ad,color:white
+    
+    class Home,Topics,Quiz,Results primary
+    class ChatbotHelp,GetAssistance info
+    class AuthFlow,Profile secondary
+    class Submit,ViewHistory success

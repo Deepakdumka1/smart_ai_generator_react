@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
@@ -20,6 +19,8 @@ import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import AdminPanel from './pages/AdminPanel';
+import Leaderboard from './pages/Leaderboard';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
@@ -142,10 +143,14 @@ function App() {
             
             <MainContent id="main-content" className="container">
               <Routes>
+                {/* Public Routes */}
                 <Route path="/" element={<Home />} />
                 <Route path="/topics" element={<Topics />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                
+                {/* Protected Routes */}
                 <Route path="/profile" element={
                   <PrivateRoute>
                     <Profile />
@@ -156,11 +161,27 @@ function App() {
                     <Quiz />
                   </PrivateRoute>
                 } />
+                
+                {/* Results route - Fixed to handle both with and without quizId */}
+                <Route path="/results" element={
+                  <PrivateRoute>
+                    <Results />
+                  </PrivateRoute>
+                } />
                 <Route path="/results/:quizId" element={
                   <PrivateRoute>
                     <Results />
                   </PrivateRoute>
                 } />
+                
+                {/* Admin Panel Route */}
+                <Route path="/admin" element={
+                  <PrivateRoute>
+                    <AdminPanel />
+                  </PrivateRoute>
+                } />
+                
+                {/* 404 - Keep this as the last route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MainContent>

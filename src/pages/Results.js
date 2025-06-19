@@ -1,874 +1,613 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import styled, { keyframes } from 'styled-components';
-import {
-  DifficultyChart,
-  OverallPerformanceChart,
-  TopicMasteryChart,
-  ResponseTimeChart
-} from '../components/ResultChart';
-import { getTopicRecommendations } from '../utils/quizUtils';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import '../styles/responsive.css';
-
-// Animation keyframes
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const pulse = keyframes`
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
-`;
-
-// Skeleton loaders
-const SkeletonBox = styled.div`
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: ${pulse} 1.5s ease-in-out infinite;
-  border-radius: 8px;
-  height: ${props => props.height || '20px'};
-  width: ${props => props.width || '100%'};
-  margin-bottom: ${props => props.mb || '10px'};
-`;
-
-const ResultsContainer = styled.div`
-  padding: 20px 15px;
-  max-width: 1200px;
-  margin: 0 auto;
-  animation: ${fadeIn} 0.5s ease-out;
-  
-  @media (max-width: 768px) {
-    padding: 15px 10px;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 10px;
-  }
-`;
-
-const ResultsHeader = styled.div`
-  margin-bottom: 40px;
-  text-align: center;
-  
-  @media (max-width: 768px) {
-    margin-bottom: 25px;
-  }
-  
-  @media (max-width: 576px) {
-    margin-bottom: 20px;
-  }
-`;
-
-const ResultsTitle = styled.h1`
-  font-size: 2.5rem;
-  margin-bottom: 15px;
-  color: #343a40;
-  
-  @media (max-width: 768px) {
-    font-size: 2rem;
-    margin-bottom: 10px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 1.5rem;
-    margin-bottom: 8px;
-  }
-`;
-
-const ResultsSubtitle = styled.p`
-  font-size: 1.1rem;
-  color: #6c757d;
-  max-width: 700px;
-  margin: 0 auto;
-  
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-    padding: 0 10px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-`;
-
-const ScoreSummary = styled.div`
-  background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-  color: white;
-  border-radius: 10px;
-  padding: 30px;
-  text-align: center;
-  margin-bottom: 40px;
-  box-shadow: 0 4px 20px rgba(67, 97, 238, 0.15);
-  transition: transform 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 20px 15px;
-    margin-bottom: 25px;
-    border-radius: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 3px 10px rgba(67, 97, 238, 0.15);
-  }
-`;
-
-const ScoreValue = styled.div`
-  font-size: 4rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  
-  @media (max-width: 768px) {
-    font-size: 3rem;
-    margin-bottom: 5px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 2.5rem;
-    margin-bottom: 3px;
-  }
-`;
-
-const ScoreLabel = styled.p`
-  font-size: 1.2rem;
-  opacity: 0.9;
-  
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-`;
-
-const ChartsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-  gap: 30px;
-  margin-bottom: 40px;
-  
-  @media (max-width: 992px) {
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 25px;
-  }
-  
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-bottom: 25px;
-  }
-  
-  @media (max-width: 576px) {
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-`;
-
-const SectionTitle = styled.h2`
-  font-size: 1.8rem;
-  margin-bottom: 20px;
-  color: #343a40;
-  position: relative;
-  padding-bottom: 10px;
-  
-  &:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 50px;
-    height: 3px;
-    background: linear-gradient(90deg, #4361ee, #3a0ca3);
-    border-radius: 3px;
-  }
-  
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 1.3rem;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    
-    &:after {
-      width: 40px;
-      height: 2px;
-    }
-  }
-`;
-
-const RecommendationsSection = styled.section`
-  margin-bottom: 40px;
-  
-  @media (max-width: 768px) {
-    margin-bottom: 25px;
-  }
-  
-  @media (max-width: 576px) {
-    margin-bottom: 20px;
-  }
-`;
-
-const RecommendationsList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-  }
-  
-  @media (max-width: 576px) {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-`;
-
-const RecommendationCard = styled.div`
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  border-left: 5px solid #4361ee;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 15px;
-    border-radius: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 12px;
-    border-radius: 6px;
-    border-left-width: 4px;
-  }
-`;
-
-const RecommendationTitle = styled.h3`
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #343a40;
-  
-  @media (max-width: 768px) {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 1rem;
-    margin-bottom: 6px;
-  }
-`;
-
-const RecommendationText = styled.p`
-  color: #6c757d;
-  margin-bottom: 15px;
-  line-height: 1.5;
-  
-  @media (max-width: 768px) {
-    font-size: 0.95rem;
-    margin-bottom: 12px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 0.9rem;
-    margin-bottom: 10px;
-    line-height: 1.4;
-  }
-`;
-
-const RecommendationButton = styled(Link)`
-  display: inline-block;
-  background-color: #4361ee;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 5px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  text-decoration: none;
-  
-  &:hover {
-    background-color: #3a56d4;
-    transform: translateY(-2px);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 7px 12px;
-    font-size: 0.85rem;
-  }
-  
-  @media (max-width: 576px) {
-    width: 100%;
-    text-align: center;
-    padding: 10px 15px;
-  }
-`;
-
-const QuestionReviewSection = styled.section`
-  margin-bottom: 40px;
-  
-  @media (max-width: 768px) {
-    margin-bottom: 25px;
-  }
-  
-  @media (max-width: 576px) {
-    margin-bottom: 20px;
-  }
-`;
-
-const QuestionReviewList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  
-  @media (max-width: 768px) {
-    gap: 12px;
-  }
-  
-  @media (max-width: 576px) {
-    gap: 10px;
-  }
-`;
-
-const QuestionReviewItem = styled.div`
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  border-left: 5px solid ${props => props.correct ? '#38b000' : '#ef476f'};
-  transition: transform 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-3px);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 15px;
-    border-radius: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 12px;
-    border-radius: 6px;
-    border-left-width: 4px;
-  }
-`;
-
-const QuestionText = styled.h3`
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-  color: #343a40;
-  
-  @media (max-width: 768px) {
-    font-size: 1rem;
-    margin-bottom: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 0.95rem;
-    margin-bottom: 6px;
-  }
-`;
-
-const AnswerInfo = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 10px;
-  
-  @media (max-width: 768px) {
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-  
-  @media (max-width: 576px) {
-    gap: 8px;
-    margin-bottom: 6px;
-    flex-direction: column;
-  }
-`;
-
-const AnswerItem = styled.div`
-  font-size: 0.95rem;
-  color: #6c757d;
-  
-  @media (max-width: 768px) {
-    font-size: 0.9rem;
-  }
-  
-  @media (max-width: 576px) {
-    font-size: 0.85rem;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #f0f0f0;
-    
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-  
-  strong {
-    color: #495057;
-  }
-`;
-
-const ExplanationBox = styled.div`
-  background-color: #f8f9fa;
-  border-radius: 5px;
-  padding: 10px;
-  margin-top: 10px;
-  font-size: 0.9rem;
-  color: #495057;
-  
-  @media (max-width: 768px) {
-    padding: 8px;
-    font-size: 0.85rem;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 6px 8px;
-    font-size: 0.8rem;
-    margin-top: 8px;
-  }
-  
-  strong {
-    color: #212529;
-  }
-`;
-
-const ButtonsContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 40px;
-  
-  @media (max-width: 768px) {
-    gap: 15px;
-    margin-top: 30px;
-  }
-  
-  @media (max-width: 576px) {
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 25px;
-  }
-`;
-
-const ActionButton = styled(Link)`
-  display: inline-block;
-  padding: 12px 25px;
-  border-radius: 5px;
-  font-weight: 500;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  text-align: center;
-  text-decoration: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 10px 20px;
-    font-size: 0.95rem;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 12px 15px;
-    font-size: 0.9rem;
-    width: 100%;
-  }
-`;
-
-const PrimaryButton = styled(ActionButton)`
-  background-color: #4361ee;
-  color: white;
-  
-  &:hover {
-    background-color: #3a56d4;
-  }
-`;
-
-const SecondaryButton = styled(ActionButton)`
-  background-color: #e9ecef;
-  color: #495057;
-  
-  &:hover {
-    background-color: #dee2e6;
-  }
-`;
-
-const ErrorContainer = styled.div`
-  text-align: center;
-  padding: 40px 20px;
-  color: #ef476f;
-  
-  h2 {
-    font-size: 1.8rem;
-    margin-bottom: 15px;
-    
-    @media (max-width: 768px) {
-      font-size: 1.5rem;
-    }
-    
-    @media (max-width: 576px) {
-      font-size: 1.3rem;
-    }
-  }
-  
-  p {
-    color: #6c757d;
-    margin-bottom: 20px;
-    
-    @media (max-width: 768px) {
-      font-size: 0.95rem;
-    }
-    
-    @media (max-width: 576px) {
-      font-size: 0.9rem;
-    }
-  }
-`;
-
-const LoadingContainer = styled.div`
-  padding: 40px 20px;
-  max-width: 800px;
-  margin: 0 auto;
-  
-  @media (max-width: 768px) {
-    padding: 30px 15px;
-  }
-  
-  @media (max-width: 576px) {
-    padding: 20px 10px;
-  }
-`;
-
-// Skeleton loader for results page
-const ResultsSkeleton = () => (
-  <LoadingContainer>
-    <div className="text-center mb-4">
-      <SkeletonBox height="40px" width="60%" style={{ margin: '0 auto' }} mb="15px" />
-      <SkeletonBox height="20px" width="80%" style={{ margin: '0 auto' }} />
-    </div>
-    
-    <SkeletonBox height="150px" mb="30px" />
-    
-    <div style={{ marginBottom: '30px' }}>
-      <SkeletonBox height="30px" width="150px" mb="20px" />
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '20px'
-      }}>
-        <SkeletonBox height="250px" />
-        <SkeletonBox height="250px" />
-      </div>
-    </div>
-    
-    <SkeletonBox height="30px" width="180px" mb="20px" />
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-      gap: '15px',
-      marginBottom: '30px'
-    }}>
-      <SkeletonBox height="150px" />
-      <SkeletonBox height="150px" />
-    </div>
-    
-    <SkeletonBox height="30px" width="150px" mb="20px" />
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
-      <SkeletonBox height="120px" />
-      <SkeletonBox height="120px" />
-    </div>
-    
-    <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
-      <SkeletonBox height="45px" width="150px" />
-      <SkeletonBox height="45px" width="150px" />
-    </div>
-  </LoadingContainer>
-);
+import { db } from '../config/firebase';
+import { 
+  collection, 
+  addDoc, 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  increment,
+  serverTimestamp,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  setDoc
+} from 'firebase/firestore';
+import './Results.css';
 
 const Results = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { quizId } = useParams();
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
-  const [quizResults, setQuizResults] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [topicInfo, setTopicInfo] = useState(null);
+  const [quizHistoryId, setQuizHistoryId] = useState(null);
+  const [userRank, setUserRank] = useState(null);
+  const [totalParticipants, setTotalParticipants] = useState(0);
   const [error, setError] = useState(null);
-  const [expandedQuestions, setExpandedQuestions] = useState({});
+  const [debugInfo, setDebugInfo] = useState('');
 
-  // Toggle question explanation
-  const toggleQuestionExpand = (index) => {
-    setExpandedQuestions(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
+  // Get results data from navigation state or load from database
+  const [resultsData, setResultsData] = useState(location.state);
 
   useEffect(() => {
-    const loadQuizResults = async () => {
-      try {
-        setLoading(true);
-        
-        if (!quizId) {
-          throw new Error('Quiz ID is missing');
-        }
-        
-        // Security check - only load if user is logged in
-        if (!currentUser?.uid) {
-          navigate('/login', { state: { from: `/results/${quizId}` } });
-          return;
-        }
-        
-        const quizRef = doc(db, 'quizHistory', quizId);
-        const quizDoc = await getDoc(quizRef);
-        
-        if (quizDoc.exists()) {
-          const quizData = quizDoc.data();
-          
-          // Security check - ensure user only sees their own quiz results
-          if (quizData.userId !== currentUser.uid) {
-            throw new Error('You do not have permission to view these results');
-          }
-          
-          setQuizResults(quizData);
-          
-          // Generate recommendations based on results
-          const topicRecommendations = getTopicRecommendations(quizData);
-          setRecommendations(topicRecommendations);
-        } else {
-          throw new Error('Quiz results not found');
-        }
-      } catch (err) {
-        console.error('Error loading quiz results:', err);
-        setError(err.message || 'Failed to load quiz results');
-      } finally {
-        // Add a slight delay to prevent layout shifts
-        setTimeout(() => setLoading(false), 500);
-      }
-    };
+    console.log('🎯 Results component mounted');
+    console.log('📊 Location state:', location.state);
+    console.log('🔍 Quiz ID from params:', quizId);
+    console.log('👤 Current user:', currentUser?.email);
 
-    loadQuizResults();
-  }, [quizId, currentUser, navigate]);
-
-  if (loading) {
-    return <ResultsSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <ErrorContainer>
-        <h2>Oops! Something went wrong</h2>
-        <p>{error}</p>
-        <PrimaryButton to="/topics" className="mobile-full-width">
-          Return to Topics
-        </PrimaryButton>
-      </ErrorContainer>
-    );
-  }
-
-  if (!quizResults) {
-    return (
-      <ErrorContainer>
-        <h2>No Results Found</h2>
-        <p>The quiz results you're looking for don't exist or have been removed.</p>
-        <PrimaryButton to="/topics" className="mobile-full-width">
-          Explore Topics
-        </PrimaryButton>
-      </ErrorContainer>
-    );
-  }
-
-  // Calculate overall score
-  const correctAnswers = quizResults.answers.filter(answer => answer.correct).length;
-  const totalQuestions = quizResults.questions.length;
-  const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
-
-  // Prepare data for charts
-  const difficultyData = {
-    easy: { correct: 0, incorrect: 0 },
-    medium: { correct: 0, incorrect: 0 },
-    hard: { correct: 0, incorrect: 0 }
-  };
-
-  quizResults.answers.forEach((answer, index) => {
-    const question = quizResults.questions[index];
-    const difficulty = question.difficulty;
-
-    if (answer.correct) {
-      difficultyData[difficulty].correct += 1;
-    } else {
-      difficultyData[difficulty].incorrect += 1;
+    // If no results data and we have a quizId, try to load from database
+    if (!resultsData && quizId) {
+      console.log('📥 Loading quiz results from database...');
+      loadQuizResults();
+    } else if (!resultsData && !quizId) {
+      console.log('❌ No results data and no quiz ID - redirecting to topics');
+      navigate('/topics');
+      return;
     }
-  });
 
-  // Response time data
-  const responseTimeData = quizResults.answers.map(answer => answer.responseTime);
+    if (resultsData && currentUser && !saved) {
+      console.log('✅ Results data found, processing...');
+      setDebugInfo('Processing quiz results...');
+      
+      // Fetch topic information
+      fetchTopicInfo();
+      
+      // Save results to Firebase
+      saveResults();
+    }
+  }, [resultsData, quizId, navigate, currentUser, saved]);
 
-  // Topic mastery data (simplified for demo)
-  const topicMasteryData = {
-    [quizResults.topicName]: scorePercentage,
-    // In a real app, you would have more topics here based on user history
+  const loadQuizResults = async () => {
+    if (!quizId) return;
+
+    try {
+      setDebugInfo('Loading quiz results from database...');
+      const quizDoc = await getDoc(doc(db, 'quizHistory', quizId));
+      if (quizDoc.exists()) {
+        const data = quizDoc.data();
+        console.log('📊 Loaded quiz data:', data);
+        setResultsData(data);
+        setQuizHistoryId(quizId);
+        setSaved(true);
+        setDebugInfo('Quiz results loaded from database');
+      } else {
+        console.log('❌ Quiz not found in database');
+        setError('Quiz results not found');
+        navigate('/topics');
+      }
+    } catch (error) {
+      console.error('❌ Error loading quiz results:', error);
+      setError(`Error loading quiz: ${error.message}`);
+      navigate('/topics');
+    }
   };
 
-  // Determine score level for conditional UI elements
-  const scoreLevel = 
-    scorePercentage >= 80 ? 'excellent' :
-    scorePercentage >= 60 ? 'good' :
-    scorePercentage >= 40 ? 'average' : 'needs-improvement';
+  const fetchTopicInfo = async () => {
+    if (!resultsData?.topicId) {
+      console.log('⚠️ No topic ID in results data');
+      return;
+    }
+
+    try {
+      console.log('🏷️ Fetching topic info for:', resultsData.topicId);
+      setDebugInfo('Fetching topic information...');
+      
+      const topicDoc = await getDoc(doc(db, 'topics', resultsData.topicId));
+      if (topicDoc.exists()) {
+        const topicData = topicDoc.data();
+        console.log('✅ Topic info loaded:', topicData);
+        setTopicInfo(topicData);
+        setDebugInfo('Topic information loaded');
+      } else {
+        console.log('⚠️ Topic not found, using default');
+        setTopicInfo({
+          name: resultsData.topicName || 'Unknown Topic',
+          description: 'Topic information not available',
+          color: '#6c757d',
+          icon: '📝'
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching topic info:', error);
+      setDebugInfo(`Error fetching topic: ${error.message}`);
+    }
+  };
+
+  const saveResults = async () => {
+    if (!currentUser || !resultsData || saved || saving) {
+      console.log('⏭️ Skipping save - already saved or missing data');
+      return;
+    }
+
+    console.log('💾 Starting to save quiz results...');
+    setSaving(true);
+    setDebugInfo('Saving quiz results...');
+    
+    try {
+      // Prepare the result data with all necessary fields
+      const resultToSave = {
+        // User information
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        userName: currentUser.displayName || currentUser.email.split('@')[0],
+        userPhotoURL: currentUser.photoURL || null,
+        
+        // Quiz information
+        topicId: resultsData.topicId,
+        topicName: resultsData.topicName,
+        
+        // Score information
+        score: resultsData.score || resultsData.correctAnswers,
+        totalQuestions: resultsData.totalQuestions,
+        correctAnswers: resultsData.correctAnswers,
+        incorrectAnswers: resultsData.totalQuestions - resultsData.correctAnswers,
+        percentage: Math.round((resultsData.correctAnswers / resultsData.totalQuestions) * 100),
+        
+        // Time information
+        timeSpent: resultsData.timeSpent || 0,
+        
+        // Quiz settings
+        difficulty: resultsData.difficulty || 'all',
+        
+        // Detailed results
+        answers: resultsData.answers || [],
+        questions: resultsData.questions || [],
+        detailedResults: resultsData.detailedResults || [],
+        
+        // Timestamps
+        completedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        
+        // Status flags
+        isCompleted: true,
+        attemptNumber: 1,
+        
+        // Device information
+        deviceInfo: {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      console.log('📝 Saving quiz result:', resultToSave);
+
+      // Save to quiz history
+      const docRef = await addDoc(collection(db, 'quizHistory'), resultToSave);
+      const savedId = docRef.id;
+      
+      console.log('✅ Quiz result saved with ID:', savedId);
+      setQuizHistoryId(savedId);
+      setDebugInfo(`Quiz results saved successfully (ID: ${savedId})`);
+      
+      // Update user statistics
+      await updateUserStats(resultToSave);
+      
+      // Calculate user rank
+      await calculateUserRank(resultToSave);
+      
+      setSaved(true);
+      
+      // Update URL to include quiz ID for sharing
+      window.history.replaceState(null, '', `/results/${savedId}`);
+      
+      console.log('🎉 All data saved successfully!');
+      setDebugInfo('All data saved successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error saving results:', error);
+      setError(`Error saving results: ${error.message}`);
+      setDebugInfo(`Error saving results: ${error.message}`);
+      
+      // Show detailed error information
+      if (error.code === 'permission-denied') {
+        setError('Permission denied. Please check your login status and try again.');
+      } else if (error.code === 'unavailable') {
+        setError('Database temporarily unavailable. Please try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateUserStats = async (resultData) => {
+    try {
+      console.log('📈 Updating user stats...');
+      setDebugInfo('Updating user statistics...');
+      
+      // Use the user's UID as the document ID for easier querying
+      const userStatsRef = doc(db, 'userStats', currentUser.uid);
+      const userStatsDoc = await getDoc(userStatsRef);
+      
+      if (userStatsDoc.exists()) {
+        // Update existing stats
+        const currentStats = userStatsDoc.data();
+        const newTotalQuizzes = (currentStats.totalQuizzes || 0) + 1;
+        const newTotalQuestions = (currentStats.totalQuestions || 0) + resultData.totalQuestions;
+        const newTotalCorrect = (currentStats.totalCorrectAnswers || 0) + resultData.correctAnswers;
+        const newAverageScore = Math.round((newTotalCorrect / newTotalQuestions) * 100);
+        
+        await updateDoc(userStatsRef, {
+          totalQuizzes: newTotalQuizzes,
+          totalQuestions: newTotalQuestions,
+          totalCorrectAnswers: newTotalCorrect,
+          totalTimeSpent: increment(resultData.timeSpent),
+          averageScore: newAverageScore,
+          lastQuizDate: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        
+        console.log('✅ User stats updated');
+      } else {
+        // Create new stats document with user ID as document ID
+        const newStats = {
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          userName: resultData.userName,
+          totalQuizzes: 1,
+          totalQuestions: resultData.totalQuestions,
+          totalCorrectAnswers: resultData.correctAnswers,
+          totalTimeSpent: resultData.timeSpent,
+          averageScore: resultData.percentage,
+          firstQuizDate: serverTimestamp(),
+          lastQuizDate: serverTimestamp(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        };
+        
+        await setDoc(userStatsRef, newStats);
+        console.log('✅ New user stats created');
+      }
+      
+      setDebugInfo('User statistics updated');
+    } catch (error) {
+      console.error('❌ Error updating user stats:', error);
+      setDebugInfo(`Error updating user stats: ${error.message}`);
+    }
+  };
+
+  const calculateUserRank = async (resultData) => {
+    try {
+      console.log('🏆 Calculating user rank...');
+      setDebugInfo('Calculating your rank...');
+      
+      // Get all quiz attempts for this topic
+      const quizHistoryQuery = query(
+        collection(db, 'quizHistory'),
+        where('topicId', '==', resultData.topicId),
+        orderBy('percentage', 'desc'),
+        orderBy('timeSpent', 'asc')
+      );
+      
+      const snapshot = await getDocs(quizHistoryQuery);
+      
+      // Create a map to store best scores per user
+      const userBestScores = new Map();
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const userId = data.userId;
+        const currentScore = data.percentage;
+        const currentTime = data.timeSpent;
+        
+        if (!userBestScores.has(userId) || 
+            userBestScores.get(userId).percentage < currentScore ||
+            (userBestScores.get(userId).percentage === currentScore && 
+             userBestScores.get(userId).timeSpent > currentTime)) {
+          userBestScores.set(userId, {
+            percentage: currentScore,
+            timeSpent: currentTime,
+            userId: userId
+          });
+        }
+      });
+      
+      // Sort users by score and time
+      const sortedUsers = Array.from(userBestScores.values())
+        .sort((a, b) => {
+          if (b.percentage !== a.percentage) {
+            return b.percentage - a.percentage;
+          }
+          return a.timeSpent - b.timeSpent;
+        });
+      
+      // Find current user's rank
+      const userRankIndex = sortedUsers.findIndex(user => user.userId === currentUser.uid);
+      const rank = userRankIndex + 1;
+      const total = sortedUsers.length;
+      
+      console.log('🏆 User rank calculated:', rank, 'out of', total);
+      setUserRank(rank);
+      setTotalParticipants(total);
+      setDebugInfo(`Your rank: #${rank} out of ${total} participants`);
+      
+    } catch (error) {
+      console.error('❌ Error calculating rank:', error);
+      setDebugInfo(`Error calculating rank: ${error.message}`);
+    }
+  };
+
+  // Manual save function for debugging
+  const forceSave = async () => {
+    setSaved(false);
+    setSaving(false);
+    await saveResults();
+  };
+
+  // Test database connection
+  const testConnection = async () => {
+    try {
+      setDebugInfo('Testing database connection...');
+      
+      // Test write permission
+      const testDoc = {
+        test: true,
+        userId: currentUser.uid,
+        timestamp: serverTimestamp()
+      };
+      
+      const docRef = await addDoc(collection(db, 'quizHistory'), testDoc);
+      console.log('✅ Test document created:', docRef.id);
+      
+      // Clean up test document
+      await docRef.delete();
+      
+      setDebugInfo('Database connection successful!');
+    } catch (error) {
+      console.error('❌ Database test failed:', error);
+      setDebugInfo(`Database test failed: ${error.message}`);
+      setError(`Database connection failed: ${error.message}`);
+    }
+  };
+
+  // If no results data, show loading or redirect
+  if (!resultsData) {
+    return (
+      <div className="results-container">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>Loading results...</p>
+          {debugInfo && <p className="debug-info">{debugInfo}</p>}
+          {error && <p className="error-info">{error}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    score,
+    totalQuestions,
+    correctAnswers,
+    percentage = Math.round((correctAnswers / totalQuestions) * 100),
+    timeSpent,
+    topicName,
+    difficulty,
+    answers,
+    questions
+  } = resultsData;
+
+  const getScoreColor = (percentage) => {
+    if (percentage >= 80) return '#28a745'; // Green
+    if (percentage >= 60) return '#ffc107'; // Yellow
+    return '#dc3545'; // Red
+  };
+
+  const getScoreMessage = (percentage) => {
+    if (percentage >= 90) return { emoji: '🏆', message: 'Outstanding! You\'re a quiz master!' };
+    if (percentage >= 80) return { emoji: '🎉', message: 'Excellent work! Keep it up!' };
+    if (percentage >= 70) return { emoji: '👏', message: 'Great job! You\'re doing well!' };
+    if (percentage >= 60) return { emoji: '👍', message: 'Good effort! Room for improvement!' };
+    if (percentage >= 50) return { emoji: '📚', message: 'Keep studying! You\'ll get there!' };
+    return { emoji: '💪', message: 'Don\'t give up! Practice makes perfect!' };
+  };
+
+  const formatTime = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const scoreInfo = getScoreMessage(percentage);
 
   return (
-    <ResultsContainer className="fade-in">
-      <ResultsHeader>
-        <ResultsTitle>Quiz Results</ResultsTitle>
-        <ResultsSubtitle>
-          Here's how you performed on the {quizResults.topicName} quiz
-        </ResultsSubtitle>
-      </ResultsHeader>
+    <div className="results-container">
+      {/* Debug Information */}
+      <div className="debug-section">
+        <details>
+          <summary>🔧 Debug Information</summary>
+          <div className="debug-content">
+            <p><strong>User:</strong> {currentUser?.email} (ID: {currentUser?.uid})</p>
+            <p><strong>Quiz ID:</strong> {quizHistoryId || 'Not saved yet'}</p>
+            <p><strong>Topic:</strong> {topicName} (ID: {resultsData.topicId})</p>
+            <p><strong>Score:</strong> {percentage}% ({correctAnswers}/{totalQuestions})</p>
+            <p><strong>Time:</strong> {formatTime(timeSpent)}</p>
+            <p><strong>Saved:</strong> {saved ? 'Yes' : 'No'}</p>
+            <p><strong>Saving:</strong> {saving ? 'Yes' : 'No'}</p>
+            <p><strong>Rank:</strong> {userRank ? `#${userRank} of ${totalParticipants}` : 'Calculating...'}</p>
+            <p><strong>Status:</strong> {debugInfo}</p>
+            {error && <p style={{color: 'red'}}><strong>Error:</strong> {error}</p>}
+            
+            <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button onClick={forceSave} className="debug-btn" disabled={saving}>
+                🔄 Force Save
+              </button>
+              <button onClick={testConnection} className="debug-btn">
+                🧪 Test Connection
+              </button>
+              <button onClick={() => navigate('/profile')} className="debug-btn">
+                👤 View Profile
+              </button>
+            </div>
+            
+            {resultsData && (
+              <details style={{ marginTop: '15px' }}>
+                <summary>📊 Raw Results Data</summary>
+                <pre style={{ 
+                  background: '#f8f9fa', 
+                  padding: '10px', 
+                  borderRadius: '4px', 
+                  fontSize: '0.8rem',
+                  overflow: 'auto',
+                  maxHeight: '200px'
+                }}>
+                  {JSON.stringify(resultsData, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        </details>
+      </div>
 
-      <ScoreSummary className={`score-${scoreLevel}`}>
-        <ScoreValue>{scorePercentage}%</ScoreValue>
-        <ScoreLabel>
-          You answered {correctAnswers} out of {totalQuestions} questions correctly
-        </ScoreLabel>
-      </ScoreSummary>
-
-      <ChartsGrid className="mobile-stack">
-        <OverallPerformanceChart
-          correct={correctAnswers}
-          incorrect={totalQuestions - correctAnswers}
-        />
-
-        <DifficultyChart data={difficultyData} />
-
-        {/* Render charts conditionally based on screen size */}
-        <div className="d-none d-md-block">
-          <ResponseTimeChart responseTimeData={responseTimeData} />
+      {/* Results Header */}
+      <div className="results-header">
+        <div className="score-circle" style={{ borderColor: getScoreColor(percentage) }}>
+          <div className="score-percentage" style={{ color: getScoreColor(percentage) }}>
+            {percentage}%
+          </div>
+          <div className="score-label">Score</div>
         </div>
-
-        <TopicMasteryChart topicScores={topicMasteryData} />
         
-        {/* Show this chart only on mobile */}
-        <div className="d-md-none">
-          <ResponseTimeChart responseTimeData={responseTimeData} />
+        <div className="results-title">
+          <div className="score-emoji">{scoreInfo.emoji}</div>
+          <h1>Quiz Complete!</h1>
+          <p className="score-message">{scoreInfo.message}</p>
+          
+          {/* Show ranking if available */}
+          {userRank && totalParticipants && (
+            <div className="ranking-info">
+              <div className="rank-badge">
+                <span className="rank-number">#{userRank}</span>
+                <span className="rank-text">out of {totalParticipants} participants</span>
+              </div>
+            </div>
+          )}
         </div>
-      </ChartsGrid>
+      </div>
 
-      <RecommendationsSection>
-        <SectionTitle>Recommendations</SectionTitle>
-        <RecommendationsList>
-          {recommendations.map((recommendation, index) => (
-            <RecommendationCard key={index} className="mobile-full-width">
-              <RecommendationTitle>{recommendation.title}</RecommendationTitle>
-              <RecommendationText>{recommendation.description}</RecommendationText>
-              {recommendation.topicId && (
-                <RecommendationButton to={`/quiz/${recommendation.topicId}`}>
-                  Start Quiz
-                </RecommendationButton>
-              )}
-            </RecommendationCard>
-          ))}
-        </RecommendationsList>
-      </RecommendationsSection>
+      {/* Topic Info */}
+      {topicInfo && (
+        <div className="topic-summary">
+          <div className="topic-icon" style={{ backgroundColor: topicInfo.color }}>
+            {topicInfo.icon}
+          </div>
+          <div className="topic-details">
+            <h2>{topicName}</h2>
+            <p>{topicInfo.description}</p>
+          </div>
+        </div>
+      )}
 
-      <QuestionReviewSection>
-        <SectionTitle>Question Review</SectionTitle>
-        <QuestionReviewList>
-          {quizResults.questions.map((question, index) => {
-            const answer = quizResults.answers[index];
-            const isCorrect = answer?.correct || false;
-            const isExpanded = expandedQuestions[index] || false;
+      {/* Results Stats */}
+      <div className="results-stats">
+        <div className="stat-card">
+          <div className="stat-icon">✅</div>
+          <div className="stat-value">{correctAnswers}</div>
+          <div className="stat-label">Correct</div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon">❌</div>
+          <div className="stat-value">{totalQuestions - correctAnswers}</div>
+          <div className="stat-label">Incorrect</div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon">📊</div>
+          <div className="stat-value">{totalQuestions}</div>
+          <div className="stat-label">Total</div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon">⏱️</div>
+          <div className="stat-value">{formatTime(timeSpent)}</div>
+          <div className="stat-label">Time</div>
+        </div>
+      </div>
 
-            return (
-              <QuestionReviewItem 
-                key={index} 
-                correct={isCorrect} 
-                className="mobile-full-width"
-                onClick={() => toggleQuestionExpand(index)}
-                style={{ cursor: 'pointer' }}
-              >
-                <QuestionText>
-                  {index + 1}. {question.text}
-                </QuestionText>
-                <AnswerInfo>
-                  <AnswerItem>
-                    <strong>Your answer:</strong> {answer?.selectedOption !== null ?
-                      question.options[answer.selectedOption] :
-                      'No answer provided'}
-                  </AnswerItem>
-                  <AnswerItem>
-                    <strong>Correct answer:</strong> {question.options[question.correctOption]}
-                  </AnswerItem>
-                  <AnswerItem>
-                    <strong>Difficulty:</strong> {question.difficulty}
-                  </AnswerItem>
-                  <AnswerItem>
-                    <strong>Response time:</strong> {answer?.responseTime.toFixed(2)}s
-                  </AnswerItem>
-                </AnswerInfo>
-                
-                {/* Collapsible explanation section */}
-                {question.explanation && (
-                  <ExplanationBox 
-                    className={isExpanded ? 'fade-in' : 'd-none'}
-                  >
-                    <strong>Explanation:</strong> {question.explanation}
-                  </ExplanationBox>
-                )}
-                
-                {/* Show hint if not expanded and there's an explanation */}
-                {question.explanation && !isExpanded && (
-                  <div style={{ 
-                    fontSize: '0.8rem', 
-                    color: '#6c757d', 
-                    textAlign: 'center',
-                    marginTop: '5px'
-                  }}>
-                    Tap to view explanation
-                  </div>
-                )}
-              </QuestionReviewItem>
-            );
-          })}
-        </QuestionReviewList>
-      </QuestionReviewSection>
+      {/* Difficulty Badge */}
+      {difficulty && difficulty !== 'all' && (
+        <div className="difficulty-badge">
+          <span className={`difficulty-tag ${difficulty}`}>
+            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Level
+          </span>
+        </div>
+      )}
 
-      <ButtonsContainer>
-        <PrimaryButton to={`/quiz/${quizResults.topicId}`} className="mobile-full-width">
+      {/* Save Status */}
+      {saving && (
+        <div className="save-status saving">
+          <div className="spinner small"></div>
+          <span>Saving results...</span>
+        </div>
+      )}
+      
+      {saved && (
+        <div className="save-status saved">
+          <span className="save-icon">✅</span>
+          <span>Results saved to your quiz history!</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="save-status" style={{ background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' }}>
+          <span>❌</span>
+          <span>Error: {error}</span>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="results-actions">
+        <Link to="/topics" className="btn btn-primary">
+          Try Another Topic
+        </Link>
+        
+        <Link to={`/quiz/${resultsData.topicId}`} className="btn btn-secondary">
           Retake Quiz
-        </PrimaryButton>
-        <SecondaryButton to="/topics" className="mobile-full-width">
-          Explore More Topics
-        </SecondaryButton>
-      </ButtonsContainer>
-    </ResultsContainer>
+        </Link>
+        
+        <Link to="/profile" className="btn btn-outline">
+          View Quiz History
+        </Link>
+      </div>
+
+      {/* Share Results */}
+      <div className="share-section">
+        <h4>Share Your Achievement</h4>
+        <div className="share-buttons">
+          <button 
+            className="share-btn twitter"
+            onClick={() => {
+              const text = `I just scored ${percentage}% on the ${topicName} quiz! 🎉`;
+              const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+              window.open(url, '_blank');
+            }}
+          >
+            Share on Twitter
+          </button>
+          
+          <button 
+            className="share-btn copy"
+            onClick={() => {
+              const shareUrl = window.location.href;
+              const text = `Check out my quiz result: ${shareUrl}`;
+              navigator.clipboard.writeText(text);
+              alert('Link copied to clipboard!');
+            }}
+          >
+            Copy Link
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

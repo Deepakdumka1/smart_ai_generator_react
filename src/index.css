@@ -261,7 +261,7 @@ pre {
 /* Links */
 a {
   text-decoration: none;
-  color: var(--primary);
+  color: #f8f8f8;
   transition: color 0.2s ease-in-out;
   
   &:hover {
