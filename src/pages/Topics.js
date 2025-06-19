@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../config/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import './Topics.css';
-
-const Topics = () => {
-  const { currentUser } = useAuth();
-=======
 import styled from 'styled-components';
 import TopicCard from '../components/TopicCard';
 import { topicsData } from '../data/topicsData';
-import { Link } from 'react-router-dom';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { useAuth } from '../context/AuthContext';
 import '../styles/responsive.css';
 
 const TopicsContainer = styled.div`
@@ -98,7 +89,8 @@ const FilterGroup = styled.div`
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
-  margin-top:16px;
+  margin-top: 16px;
+  
   @media (max-width: 576px) {
     gap: 8px;
     justify-content: center;
@@ -121,7 +113,7 @@ const FilterButton = styled.button`
   }
   
   @media (max-width: 768px) {
-    padding: 10px 15px; /* Larger touch target */
+    padding: 10px 15px;
   }
   
   @media (max-width: 576px) {
@@ -174,8 +166,8 @@ const SearchInput = styled.input`
   
   @media (max-width: 768px) {
     width: 100%;
-    min-height: 44px; /* Better touch target */
-    font-size: 16px; /* Prevents iOS zoom */
+    min-height: 44px;
+    font-size: 16px;
   }
 `;
 
@@ -224,11 +216,10 @@ const CategoryFiltersContainer = styled.div`
   overflow-x: auto;
   padding-bottom: 10px;
   
-  /* Hide scrollbar but allow scrolling */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
+    display: none;
   }
   
   @media (max-width: 768px) {
@@ -246,23 +237,23 @@ const ScrollableFilterGroup = styled(FilterGroup)`
 `;
 
 const Topics = () => {
->>>>>>> cb179decc8f5f44e5e1d172cb514eec530cd4803
+  const { currentUser } = useAuth();
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-<<<<<<< HEAD
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
-  const [debugInfo, setDebugInfo] = useState('');
-
-=======
-  const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const { currentUser } = useAuth();
-  
+  const [debugInfo, setDebugInfo] = useState('');
+
   // Handle window resize to detect screen size changes
->>>>>>> cb179decc8f5f44e5e1d172cb514eec530cd4803
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     fetchTopicsFromFirebase();
   }, []);
@@ -329,7 +320,6 @@ const Topics = () => {
 
           try {
             // Get question count for this topic
-            // Try both topicId and id fields to be safe
             let questionsQuery;
             if (topicData.id) {
               questionsQuery = query(
