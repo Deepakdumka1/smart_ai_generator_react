@@ -23,7 +23,7 @@ const Logo = styled.h1`
   font-size: 1.8rem;
   font-weight: 700;
   margin: 0;
-  
+  color:white;
   span {
     color: #ffd60a;
   }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../config/firebase';
@@ -13,9 +14,45 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { createSampleData, testDatabaseAccess, loadUserQuizHistory } from '../utils/QuizResultHandler';
 import './Profile.css';
+=======
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
+import { useAuth } from '../context/AuthContext';
+import imageCompression from 'browser-image-compression';
+import ApiKeyManager from '../components/ApiKeyManager';
+>>>>>>> cb179decc8f5f44e5e1d172cb514eec530cd4803
 
 const Profile = () => {
+<<<<<<< HEAD
   const { currentUser, logout } = useAuth();
+=======
+  const [activeTab, setActiveTab] = useState('profile');
+  const [aiTab, setAiTab] = useState('generator');
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    phone: ''
+  });
+
+  const [quizHistoryData, setQuizHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  const fileInputRef = useRef(null);
+  const { currentUser, updateProfile, logout, updateProfilePhoto } = useAuth();
+>>>>>>> cb179decc8f5f44e5e1d172cb514eec530cd4803
   const navigate = useNavigate();
   const [quizHistory, setQuizHistory] = useState([]);
   const [userStats, setUserStats] = useState(null);

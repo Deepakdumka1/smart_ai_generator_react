@@ -2,15 +2,15 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 
-// Components
+// Components....
 import Header from './components/Header';
 import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
 import ChatBot from './components/ChatBot';
 import ChatBotButton from './components/ChatBotButton';
-import ProgressBar from './components/ProgressBar'; // For page loading animation
+import ProgressBar from './components/ProgressBar'; // For page loading animation.....
 
-// Pages
+// Pages....
 import Home from './pages/Home';
 import Quiz from './pages/Quiz';
 import Results from './pages/Results';
@@ -22,11 +22,11 @@ import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 import Leaderboard from './pages/Leaderboard';
 
-// Context
+// Context....
 import { AuthProvider } from './context/AuthContext';
 import { ChatBotProvider } from './context/ChatBotContext';
 
-// Import responsive utility classes
+// Import responsive utility classes here .......
 import './styles/responsive.css';
 
 const AppContainer = styled.div`
