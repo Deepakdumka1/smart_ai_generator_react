@@ -72,12 +72,12 @@ const Quiz = () => {
     };
   }, [timeLeft, quizStarted, quizSettings.timeLimit]);
 
-  // Load quiz data on component mount
+  // Load quiz data whenever settings change or topic changes
   useEffect(() => {
     if (topicId) {
       loadQuizData();
     }
-  }, [topicId]);
+  }, [topicId, quizSettings.difficulty, quizSettings.questionCount]);
 
   const loadQuizData = async () => {
     try {
@@ -99,16 +99,24 @@ const Quiz = () => {
       const topicData = { firebaseId: topicSnapshot.docs[0].id, ...topicSnapshot.docs[0].data() };
       setTopic(topicData);
       
-      // Fetch questions for this topic
-      let questionsQuery = query(
-        collection(db, 'questions'),
-        where('topicId', '==', topicId),
-        where('isActive', '==', true)
-      );
+      // Fetch questions for this topic with the selected difficulty
+      let questionsQuery;
       
-      // Add difficulty filter if specified
-      if (quizSettings.difficulty !== 'all') {
-        questionsQuery = query(questionsQuery, where('difficulty', '==', quizSettings.difficulty));
+      if (quizSettings.difficulty === 'all') {
+        // If 'all' difficulties are selected, don't filter by difficulty
+        questionsQuery = query(
+          collection(db, 'questions'),
+          where('topicId', '==', topicId),
+          where('isActive', '==', true)
+        );
+      } else {
+        // Filter by the selected difficulty
+        questionsQuery = query(
+          collection(db, 'questions'),
+          where('topicId', '==', topicId),
+          where('difficulty', '==', quizSettings.difficulty),
+          where('isActive', '==', true)
+        );
       }
       
       const questionsSnapshot = await getDocs(questionsQuery);
@@ -272,40 +280,43 @@ const Quiz = () => {
       <div className="quiz-container">
         <div className="quiz-setup">
           <div className="topic-info">
-            <div className="topic-icon" style={{ backgroundColor: topic.color }}>
-              {topic.icon}
+            <div className="topic-icon" style={{ backgroundColor: topic?.color }}>
+              {topic?.icon}
             </div>
-            <h1>{topic.name}</h1>
-            <p>{topic.description}</p>
+            <h1>{topic?.name}</h1>
+            <p>{topic?.description}</p>
           </div>
           
           <div className="quiz-settings">
             <h3>Quiz Settings</h3>
             
-            <div className="setting-group">
+            <div className="form-group">
               <label>Number of Questions:</label>
               <select 
                 value={quizSettings.questionCount}
-                onChange={(e) => {
-                  setQuizSettings({...quizSettings, questionCount: parseInt(e.target.value)});
-                  loadQuizData(); // Reload with new settings
-                }}
+                onChange={(e) => setQuizSettings(prev => ({
+                  ...prev, 
+                  questionCount: parseInt(e.target.value)
+                }))}
+                className="form-control"
               >
                 <option value={5}>5 Questions</option>
                 <option value={10}>10 Questions</option>
                 <option value={15}>15 Questions</option>
                 <option value={20}>20 Questions</option>
+                <option value={50}>50 Questions</option>
               </select>
             </div>
             
-            <div className="setting-group">
-              <label>Difficulty:</label>
+            <div className="form-group">
+              <label>Difficulty Level:</label>
               <select 
                 value={quizSettings.difficulty}
-                onChange={(e) => {
-                  setQuizSettings({...quizSettings, difficulty: e.target.value});
-                  loadQuizData(); // Reload with new difficulty
-                }}
+                onChange={(e) => setQuizSettings(prev => ({
+                  ...prev, 
+                  difficulty: e.target.value
+                }))}
+                className="form-control"
               >
                 <option value="all">All Difficulties</option>
                 <option value="easy">Easy</option>
@@ -314,48 +325,53 @@ const Quiz = () => {
               </select>
             </div>
             
-            <div className="setting-group">
+            <div className="form-group">
               <label>
                 <input 
-                  type="checkbox"
+                  type="checkbox" 
                   checked={quizSettings.timeLimit}
-                  onChange={(e) => setQuizSettings({...quizSettings, timeLimit: e.target.checked})}
+                  onChange={(e) => setQuizSettings(prev => ({
+                    ...prev,
+                    timeLimit: e.target.checked
+                  }))}
                 />
-                Enable time limit (30 seconds per question)
+                Enable Time Limit (30s per question)
               </label>
             </div>
-          </div>
-          
-          <div className="quiz-info">
-            <div className="info-item">
-              <span className="info-label">Available Questions:</span>
-              <span className="info-value">{questions.length}</span>
+            
+            <div className="quiz-info">
+              <div className="info-item">
+                <span className="info-label">Available Questions:</span>
+                <span className="info-value">{questions.length}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Quiz Duration:</span>
+                <span className="info-value">
+                  {quizSettings.timeLimit ? `~${Math.ceil(quizSettings.questionCount * 0.5)} minutes` : 'No limit'}
+                </span>
+              </div>
             </div>
-            <div className="info-item">
-              <span className="info-label">Quiz Duration:</span>
-              <span className="info-value">
-                {quizSettings.timeLimit ? `~${Math.ceil(quizSettings.questionCount * 0.5)} minutes` : 'No limit'}
-              </span>
+            
+            <div className="quiz-actions">
+              <button 
+                onClick={startQuiz} 
+                className="start-quiz-btn" 
+                disabled={questions.length === 0 || loading}
+              >
+                {loading ? 'Loading...' : 'Start Quiz'}
+              </button>
+              <button 
+                onClick={() => navigate('/topics')} 
+                className="back-btn"
+              >
+                Back to Topics
+              </button>
             </div>
-          </div>
-          
-          <div className="quiz-actions">
-            <button 
-              onClick={startQuiz} 
-              className="start-quiz-btn" 
-              disabled={questions.length === 0}
-            >
-              Start Quiz
-            </button>
-            <button onClick={() => navigate('/topics')} className="back-btn">
-              Back to Topics
-            </button>
           </div>
         </div>
       </div>
     );
   }
-
   if (quizStarted) {
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
